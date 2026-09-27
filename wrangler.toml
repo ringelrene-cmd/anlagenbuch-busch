@@ -1,8 +1,0 @@
-name = "anlagenbuch-busch"
-compatibility_date = "2026-09-20"
-pages_build_output_dir = "."
-
-# Die beiden geheimen Werte NICHT hier eintragen.
-# In Cloudflare Pages unter Settings > Variables and Secrets als Secret anlegen:
-# WEB_PASSWORD       = frei gewähltes gemeinsames Web-Passwort
-# DROPBOX_TEAM_CODE  = der vorhandene Anlagenbuch-Code AB1-... aus "Firmenzugang / QR-Code"
