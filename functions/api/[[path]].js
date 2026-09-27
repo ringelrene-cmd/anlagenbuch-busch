@@ -67,10 +67,10 @@ async function api(req,env,url){if(url.pathname==='/api/login'&&req.method==='PO
 export async function onRequest(context){
   const req=context.request, env=context.env, url=new URL(req.url);
   try{
-    if(url.pathname==='/api/version') return json({ok:true,version:'2.77',mode:'pages-functions'});
+    if(url.pathname==='/api/version') return json({ok:true,version:'2.78',mode:'pages-functions-routed'});
     if(url.pathname.startsWith('/api/')) return await api(req,env,url);
     return json({ok:false,error:'API route not found.'},404);
   }catch(e){
-    return json({ok:false,error:'API-Fehler: '+String(e&&e.message||e),version:'2.77'},500,{'X-Anlagenbuch-Handler':'pages-functions-2.77'});
+    return json({ok:false,error:'API-Fehler: '+String(e&&e.message||e),version:'2.78'},500,{'X-Anlagenbuch-Handler':'pages-functions-2.77'});
   }
 }
