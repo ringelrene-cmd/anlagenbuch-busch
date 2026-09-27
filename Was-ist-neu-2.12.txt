@@ -1,0 +1,11 @@
+Anlagenbuch Web 2.12 / Begleiter 2.12
+
+- Web ist ab 2.12 die Hauptversion.
+- „Eigene Unit-Felder“ entfallen als eigener sichtbarer Bereich.
+- Zusätzliche Unit-Werte und anlagenweite Sollwerte erscheinen gemeinsam unter „Anlagen-Sollwerte / Einstellungen“.
+- Ein gemeinsamer Bearbeiten-Dialog ermöglicht zusätzliche Unit-Felder hinzufügen, ändern und löschen sowie anlagenweite Leitungs-/Medienfelder und Heizabschnitte hinzufügen, ändern und löschen.
+- Android-Begleiter 2.12: bestehende native Widget-/Alarmfunktionen bleiben erhalten; beim Öffnen startet die Web-Version.
+- Windows-Begleiter 2.12: kleiner Hintergrundhelfer mit Windows-Start, Störungsprüfung, Sirenenton, Meldung und kleiner Übersicht.
+- Web-App ist als PWA installierbar (Android, Windows, iPhone/iPad, Mac).
+- Apple: Web-App-Installation ist enthalten; ein fest erzwungener eigener Alarmton bei geschlossener App benötigt später eine signierte native Apple-App.
+- Dropbox-Backupbereinigung aus 2.11 bleibt aktiv.

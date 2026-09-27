@@ -1,0 +1,2 @@
+'use strict';
+(()=>{const f=document.getElementById('login'),e=document.getElementById('error');f.onsubmit=async ev=>{ev.preventDefault();e.textContent='Anmeldung wird geprüft …';try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:f.elements.password.value}),cache:'no-store',credentials:'same-origin'});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'Anmeldung fehlgeschlagen.');location.replace('/');}catch(err){e.textContent=err.message;}};})();

@@ -1,0 +1,5 @@
+Anlagenbuch Web 2.19
+
+- Neues quadratisches BUSCH-Logo als Browser-/Desktop-Icon.
+- Favicon bekommt einen neuen Dateinamen, damit Browser/Windows nicht das alte Logo aus dem Cache verwenden.
+- PWA- und Apple-Icons verwenden ebenfalls das neue BUSCH-Logo.

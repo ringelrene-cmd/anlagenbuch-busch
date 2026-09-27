@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.20 / Windows-Begleiter 2.20
+
+- Windows-Begleiter erstellt eine echte Desktop-Verknüpfung mit dem neuen quadratischen BUSCH-Logo.
+- Neuer Menüpunkt im Windows-Infobereich: „Desktop-Verknüpfung erstellen“.
+- Installation legt die Desktop-Verknüpfung automatisch an.
+- BUSCH-Favicon und PWA-Icons sind nun auch vor der Web-Anmeldung öffentlich abrufbar, damit Browser/Windows das neue Symbol korrekt übernehmen können.
+- Anlagenbuch-Funktionen aus 2.19 bleiben unverändert.

@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.36
+
+- Hantierungsanweisungen öffnen jetzt direkt innerhalb der Web-App.
+- Kein neuer Browser-Tab und kein separater System-PDF-Viewer mehr.
+- Interner PDF-Viewer auf Basis von Mozilla PDF.js mit Seitenwechsel und Zoom.
+- Viewer und PDF-Dateien werden lokal gespeichert und funktionieren nach einmaligem Online-Start auch offline.
+- Die in 2.35 wiederhergestellten Pool-PDFs bleiben erhalten.

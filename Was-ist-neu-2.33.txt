@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.33
+
+- Das aus Excel stammende Feld „Kürzel“ wird aus allen Units entfernt und künftig nicht mehr importiert.
+- „Für Tagesgeschäft vormerken“ steht jetzt ganz oben in jeder Unit-Ansicht.
+- „Notiz und Arbeiten“ steht direkt unter „Schutzmaßnahmen / Persönliche PSA“.
+- Die neue Reihenfolge gilt für alle Units in allen Modulen einschließlich „Noch nicht vorhanden“.
+- Bestehende Unit-Daten, Arbeiten, Störungen, PSA, Ersatzteile, Betriebsstunden und Hantierungsanweisungen bleiben erhalten.

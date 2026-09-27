@@ -1,0 +1,8 @@
+Anlagenbuch Web 2.41
+
+- Seriennummer ist ab sofort bei jeder Unit immer direkt sichtbar.
+- Das Seriennummer-Feld kann nicht mehr versehentlich ausgeblendet oder gelöscht werden.
+- Der Seriennummer-Wert bleibt unter „Unit bearbeiten“ jederzeit änderbar, z. B. nach einem Pumpentausch.
+- Die Zuordnung aus Pumpenbezeichnung.xlsx wird als Migration Version 2 erneut geprüft.
+- Leere Seriennummern werden nachgetragen; bereits manuell geänderte Seriennummern werden nicht überschrieben.
+- Beispiel CVD422 B erhält die Seriennummer C0621000130, sofern dort noch keine eigene Seriennummer gespeichert ist.

@@ -1,0 +1,5 @@
+Anlagenbuch Web 2.18
+
+- Neues, scharfes quadratisches BUSCH-App-Icon ohne weiße Ecken.
+- Neues Icon für PWA/Startbildschirm, Apple-Touch-Icon, Browser-Favicon und Benachrichtigungen.
+- Anlagenbuch-Oberfläche und Datenlogik bleiben gegenüber 2.17 unverändert.

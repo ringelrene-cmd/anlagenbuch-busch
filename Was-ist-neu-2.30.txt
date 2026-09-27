@@ -1,0 +1,10 @@
+Anlagenbuch Web 2.30
+
+- Web-Version arbeitet jetzt offline-first: Änderungen werden zuerst dauerhaft auf dem jeweiligen Gerät gespeichert.
+- Die App-Oberfläche und Kerndaten werden über den Service Worker für den Offline-Start zwischengespeichert.
+- Bei fehlendem oder instabilem Empfang kann weitergearbeitet werden; ein Neuladen greift auf den lokalen Schutzstand zurück.
+- Lokale Änderungen werden nicht mehr durch einen älteren Dropbox-Stand überschrieben.
+- Beim Wiederverbinden wird der lokale Offline-Stand mit dem aktuellen Cloud-Stand dreiseitig zusammengeführt; bei einem echten Feldkonflikt hat die lokale Eingabe Vorrang.
+- Nicht gesendete Störungs- und Arbeitseinträge bleiben in einer lokalen Warteschlange und werden später automatisch übertragen.
+- Bereits geladene PDF-/Bildinhalte können aus dem Browser-Cache offline verfügbar bleiben. Neue PDFs und Bilder benötigen weiterhin Internet zum Hochladen.
+- Bei abgelaufener Web-Sitzung bleiben lokale Änderungen erhalten, bis die Anmeldung bei stabiler Verbindung erneuert wird.

@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.38 / Android-Begleiter 2.30
+
+- Android-Widget öffnet das Anlagenbuch beim Antippen jetzt über denselben Startweg wie das App-Symbol. Dadurch funktioniert der Start auch ohne Internet, sofern die Web-App zuvor einmal online lokal gespeichert wurde.
+- Der Hintergrundempfänger plant seinen nächsten Statuscheck bereits vor dem aktuellen Netzabruf ein. Damit bleiben Widget und Störungsprüfung bei normal geschlossener bzw. weggewischter App unabhängig von einer sichtbaren Activity aktiv.
+- Offline zeigt das Widget den letzten bestätigten Stand; sobald wieder Verbindung besteht, werden Störungen, In Bearbeitung und Tagesgeschäft aktualisiert.
+- Alarm bleibt auf neue Störungs-IDs begrenzt und verwendet weiterhin die eingebaute Anlagenbuch-Sirene.
+- Web 2.38 bietet unter „Begleit-App installieren“ den neuen Android-Begleiter 2.30 an.

@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.35
+
+- Hantierungsanweisungs-PDFs werden zuverlässig geöffnet: Klick auf „Öffnen“ startet einen eigenen PDF-Viewer/Browser-PDF-Tab und zeigt zusätzlich eine eingebettete Ansicht als Fallback.
+- PDFs werden beim ersten Online-Öffnen lokal zwischengespeichert und können danach offline gelesen werden.
+- Die verlorenen Dateiverweise der vorhandenen Pool-Anweisungen Cobra_Hardware_Basic.pdf und A_C_Version_Control_Basic.pdf werden automatisch aus den noch vorhandenen Dropbox-PDF-Sicherungen wiederhergestellt.
+- Nach der Wiederherstellung werden die PDFs wieder in aktuelle Sicherungen übernommen, damit die Verknüpfung erhalten bleibt.
+- Öffnen funktioniert sowohl im zentralen Pool als auch direkt unter einer zugewiesenen Unit.

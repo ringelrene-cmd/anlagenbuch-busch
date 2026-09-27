@@ -1,0 +1,9 @@
+Anlagenbuch Web 2.40
+
+- Seriennummern aus „Pumpenbezeichnung.xlsx“ werden einmalig den vorhandenen Units zugeordnet.
+- 973 Units können sicher mit Seriennummern befüllt werden; insgesamt werden 1013 einzelne Seriennummern übernommen.
+- Bei 39 Units mit mehreren Pumpen/Seriennummern bleiben alle Nummern erhalten und werden zusammen mit dem jeweiligen Pumpenmodell im Seriennummernfeld angezeigt.
+- Das Standardfeld „Seriennummer“ ist bei allen Units sichtbar und kann jederzeit unter „Unit bearbeiten“ geändert werden.
+- Bereits manuell eingetragene Seriennummern werden beim Update nicht überschrieben.
+- Nach einem Pumpentausch kann die neue Seriennummer normal gespeichert und über Dropbox synchronisiert werden.
+- Alle Funktionen aus Web 2.39 bleiben erhalten, einschließlich Priorisierung der Anlagenliste, Offline-Betrieb und interner PDF-Anzeige.

@@ -1,0 +1,11 @@
+Anlagenbuch Web 2.22 / Android-Begleiter 2.22
+
+- Web-Anmeldung bleibt nach der ersten Anmeldung auf dem Gerät bis zu 365 Tage aktiv.
+- Browser/Web-App muss beim normalen Öffnen nicht erneut nach dem Passwort fragen.
+- Abmelden, Browserdaten löschen oder Ändern des WEB_PASSWORD beendet die gespeicherte Anmeldung.
+- Android-Begleiter 2.22 wurde technisch neu auf die Web-Version ausgerichtet.
+- Das Android-Widget liest Offene Störungen, In Bearbeitung und Tagesgeschäft direkt aus dem Web-Status.
+- Widget-Aktualisieren-Knopf und Tippen zum Öffnen des Web-Anlagenbuchs funktionieren nativ.
+- Der Begleiter fragt das Web-Passwort nur beim ersten Verbinden ab und speichert es im privaten App-Speicher.
+- Hintergrundalarm und Anlagenbuch-Sirene bleiben aktiv; Android kann Prüfungen im Energiesparmodus verzögern.
+- Nach einem Handy-Neustart den Begleiter einmal öffnen.

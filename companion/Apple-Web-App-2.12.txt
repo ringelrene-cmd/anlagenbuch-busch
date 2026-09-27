@@ -1,0 +1,7 @@
+Apple (iPhone/iPad/Mac) – Anlagenbuch Web 2.12
+
+iPhone/iPad: Safari öffnen → Teilen → Zum Home-Bildschirm.
+Mac Safari: Ablage → Zum Dock hinzufügen.
+Chrome/Edge auf macOS: Installieren-Symbol in der Adresszeile verwenden.
+
+Web-Benachrichtigungen sind möglich, der exakte fest eingebaute Anlagenbuch-Sirenenton kann bei vollständig geschlossener Web-App unter Apple jedoch nicht zuverlässig erzwungen werden. Dafür wäre eine signierte native Apple-App (Apple Developer/TestFlight/MDM) erforderlich.

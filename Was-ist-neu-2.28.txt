@@ -1,0 +1,7 @@
+Anlagenbuch Web / Android-Begleiter 2.28
+
+- Android-Widget aktualisiert auch bei geschlossener Begleit-App weiter.
+- Bis zu drei automatische Wiederholungsversuche bei kurzzeitigen HTTPS-/Netzfehlern.
+- Letzter gültiger Widget-Stand bleibt sichtbar, statt bei einem einzelnen Fehler auf Striche zu springen.
+- Kurze Statusmeldung statt langer technischer Verbindungsfehlermeldung im Widget.
+- Sirenenton-Fix aus 2.27 bleibt unverändert erhalten.

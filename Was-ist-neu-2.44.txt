@@ -1,0 +1,8 @@
+Anlagenbuch Web 2.44
+
+- Reparatur des Seriennummern-Imports aus Pumpenbezeichnung.xlsx.
+- Alle leeren Seriennummern werden trotz der fehlerhaften alten 2.40-2.43-Importmarkierung erneut geprüft und aus der Excel-Zuordnung befüllt.
+- Beispiel CVD422 B: C0621000130.
+- Bereits vorhandene bzw. manuell geänderte Seriennummern bleiben unangetastet.
+- Wenn eine Seriennummer später bewusst geändert oder geleert wird, wird diese Benutzeränderung nicht wieder vom Excel-Import überschrieben.
+- Seriennummer bleibt bei jeder Unit sichtbar und normal bearbeitbar.

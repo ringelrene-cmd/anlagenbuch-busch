@@ -1,0 +1,3 @@
+Anlagenbuch Web 2.61 Diagnose
+Zeigt bei Synchronisationsfehlern HTTP-Status, Methode und API-Endpunkt an.
+Keine Anlagen-/Excel-/Dropbox-Daten wurden verändert.

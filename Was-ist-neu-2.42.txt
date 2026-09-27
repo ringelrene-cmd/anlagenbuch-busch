@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.42
+
+- Bei allen vorhandenen Units werden einmalig die PSA-Symbole „Handschutz benutzen“ (M009) und „Atemschutz benutzen“ (M017) aktiviert.
+- Die PSA-Auswahl bleibt pro Unit vollständig bearbeitbar; später entfernte Häkchen werden nicht automatisch wieder gesetzt.
+- Neu angelegte Units starten künftig ebenfalls mit Handschutz und Atemschutz als Grundbelegung.
+- Alle bereits ausgewählten zusätzlichen PSA-Symbole bleiben unverändert erhalten.
+- Offline- und Dropbox-Synchronisation bleiben erhalten.

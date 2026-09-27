@@ -1,0 +1,8 @@
+Anlagenbuch Web 2.48
+
+- Unit-QR-Code enthält jetzt exakt den in der Unit gespeicherten QR_Code-Wert, z. B. V-VA-CVD422 A.
+- Unter dem Unit-QR-Code wird genau diese Unit-Bezeichnung angezeigt.
+- Modul-/Anlagen-QR bleibt unverändert und enthält weiterhin die Anlagen-/Koordinatenlogik.
+- Wird die Unit-Bezeichnung geändert und der QR_Code-Wert nicht separat bearbeitet, wird der QR_Code-Wert automatisch auf die neue Bezeichnung angepasst.
+- Wird das Feld QR_Code direkt geändert, wird der QR sofort aus diesem neuen Wert erzeugt.
+- Wird die Anlagenbezeichnung geändert, werden automatisch erzeugte V-VA-Unit-QR-Werte entsprechend aktualisiert.

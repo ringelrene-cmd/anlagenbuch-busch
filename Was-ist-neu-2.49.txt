@@ -1,0 +1,6 @@
+Anlagenbuch Web 2.49
+
+- PDF-Fehler 400 behoben: Beim Öffnen wird zusätzlich die eindeutige PDF-ID übertragen.
+- Falls ein Gerät noch eine veraltete PDF-Adresse aus einer inzwischen bereinigten Sicherung gespeichert hat, löst der Server die PDF automatisch gegen die aktuelle Dropbox-Sicherung auf.
+- Der interne PDF-Viewer, Wischen, Zwei-Finger-Zoom und Offline-Cache bleiben erhalten.
+- Keine lokalen Anlagen- oder Unit-Daten werden gelöscht.
