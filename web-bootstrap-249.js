@@ -16,7 +16,7 @@
    try{
     const {r,j}=await remoteBootstrap();
     if(r.status===401){if(!localRaw){location.replace('/login.html');return;}authExpired=true;throw Error('Sitzung abgelaufen');}
-    if(!r.ok||!j?.ok)throw Error((j?.error?j.error+' · ':'')+'Serverfehler '+r.status+' bei GET /api/bootstrap · Dropbox-Startdaten lesen');
+    if(!r.ok||!j?.ok)throw Error(j?.error||'Dropbox-Daten konnten nicht geladen werden.');
     boot=j;S?.cacheBootstrap?.(j);
     if(localRaw&&dirty){
      const remoteRaw=String(j.state||'');
@@ -30,7 +30,7 @@
     }else if(j.state){
      const raw=String(j.state);S?.setStateRaw?.(raw,{dirty:false});S?.setBaseRaw?.(raw);S?.setBaseAt?.(j.latestAt||0);S?.markClean?.(raw,j.latestAt||0);S?.setUploadedAt?.(j.latestAt||0);
     }else if(localRaw){boot.state=localRaw;}
-   }catch(e){offline=true;window.__WEB_START_ERROR__=String(e?.message||e);}
+   }catch(e){offline=true;}
   }else offline=true;
   if(!boot){
    if(!localRaw)throw Error('Keine Internetverbindung und noch kein lokaler Anlagenbuch-Datenstand vorhanden. Bitte einmal mit Empfang öffnen.');
@@ -40,6 +40,6 @@
   window.__WEB_BOOTSTRAP__=boot;window.__WEB_OFFLINE_BOOTSTRAP__=offline;window.__WEB_AUTH_EXPIRED_OFFLINE__=authExpired;
   await loadScripts();
   if(loading)loading.hidden=true;
-  if(offline&&window.toast)setTimeout(()=>toast(window.__WEB_START_ERROR__|| (authExpired?'Offline-Modus: lokale Daten bleiben geschützt. Für die Synchronisierung später erneut anmelden.':'Offline-Modus aktiv · Änderungen bleiben lokal geschützt, bis Dropbox sie nachweislich übernommen hat.')),250);
+  if(offline&&window.toast)setTimeout(()=>toast(authExpired?'Offline-Modus: lokale Daten bleiben geschützt. Für die Synchronisierung später erneut anmelden.':'Offline-Modus aktiv · Änderungen bleiben lokal geschützt, bis Dropbox sie nachweislich übernommen hat.'),250);
  }catch(e){fail('Anlagenbuch konnte nicht gestartet werden: '+String(e?.message||e));}
 })();

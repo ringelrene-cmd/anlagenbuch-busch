@@ -4,7 +4,7 @@
  const fail=msg=>{if(loading){loading.textContent=msg;loading.hidden=false;}};
  const S=window.OfflineStore;
  const scripts=['web-bridge-235.js','web-pdf-offline-239.js','seed-preview.js','btf-data.js','module1-data.js','annex-data.js','pump-unit-data.js','excel-unit-data.js','pump-serial-data-240.js','core.js','excel-unit-migration-235.js','pump-serial-migration-244.js','default-psa-migration-242.js','equipment.js','units-244.js','qrcode-runtime.js','app-244.js','batch-search.js','dropbox-ui.js','cloud.js','pool-links.js','handling-multi-235.js','global-sync-244.js','update-244.js','help-data.js','help-image-viewer.js','help.js','widget.js','settings-menu.js','web-ui-244.js'];
- async function loadScripts(){for(const src of scripts)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src=src+'?v=2.44';x.async=false;x.onload=resolve;x.onerror=()=>reject(Error(src+' konnte nicht geladen werden.'));document.body.appendChild(x);});}
+ async function loadScripts(){for(const src of scripts)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src=src+'?v=2.60';x.async=false;x.onload=resolve;x.onerror=()=>reject(Error(src+' konnte nicht geladen werden.'));document.body.appendChild(x);});}
  async function remoteBootstrap(){
   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),6000);
   try{const r=await fetch('/api/bootstrap?ts='+Date.now(),{cache:'no-store',credentials:'same-origin',signal:ac.signal});const j=await r.json().catch(()=>null);return {r,j};}finally{clearTimeout(timer);}

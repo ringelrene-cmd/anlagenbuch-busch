@@ -1,0 +1,7 @@
+Anlagenbuch Web 2.60
+
+- Rückkehr auf den bestätigten Web-2.44-Start-/Anwendungsunterbau.
+- Keine neue Excel-/Seriennummern-Migration aus 2.47-2.49 beim Start.
+- Bestehendes Cloudflare-Pages-Projekt und bisheriger Uploadweg bleiben erhalten.
+- 2.49-PDF-Erweiterung wird nicht als Startlogik geladen.
+- Anlagen-/Unit-Daten werden nicht gelöscht.

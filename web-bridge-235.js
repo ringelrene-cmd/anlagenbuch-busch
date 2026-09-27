@@ -4,7 +4,7 @@
  const S=window.OfflineStore,boot=window.__WEB_BOOTSTRAP__||{},remoteBackups=new Map();
  let currentRaw=typeof boot.state==='string'?boot.state:(S?.getStateRaw?.()||'');
  let faultCursor=S?.getCursor?.('fault')||String(boot.faultCursor||''),workCursor=S?.getCursor?.('work')||String(boot.workCursor||''),backupCursor=S?.getCursor?.('backup')||String(boot.backupCursor||'');
- let saveTimer=0,backupBusy=false,backupQueued=!!S?.isDirty?.(),eventApiSupported=false,lastUploaded=Math.max(Number(boot.latestAt||0),S?.getUploadedAt?.()||0),lastError='',remoteList=Array.isArray(boot.backups)?boot.backups:[],rateLimitUntil=0,editSeq=0,pollTimer=0;
+ let saveTimer=0,backupBusy=false,backupQueued=!!S?.isDirty?.(),lastUploaded=Math.max(Number(boot.latestAt||0),S?.getUploadedAt?.()||0),lastError='',remoteList=Array.isArray(boot.backups)?boot.backups:[],rateLimitUntil=0,editSeq=0,pollTimer=0;
  const APP_ROOT='/Busch Group/Anlagenbuch',POLL_MS=10000;
  const online=()=>navigator.onLine!==false;
  const rateWait=()=>Math.max(0,rateLimitUntil-Date.now());
@@ -18,7 +18,7 @@
   let r;try{r=await fetch(path,{cache:'no-store',credentials:'same-origin',...opt});}catch(err){S?.setNeedsReconcile?.(true);const e=Error('Keine stabile Internetverbindung. Änderungen bleiben lokal geschützt.');e.offline=true;throw e;}
   const ct=r.headers.get('content-type')||'',j=ct.includes('application/json')?await r.json().catch(()=>null):null;
   if(r.status===401){const e=Error('Web-Sitzung abgelaufen. Deine lokalen Änderungen bleiben erhalten. Bitte bei stabiler Verbindung neu anmelden.');e.authExpired=true;throw e;}
-  if(!r.ok){if(r.status===429){const h=Number(r.headers.get('Retry-After')||0),b=Number(j?.retryAfter||0),seconds=Math.max(10,Math.min(300,h||b||30));rateLimitUntil=Math.max(rateLimitUntil,Date.now()+seconds*1000);const e=Error('Dropbox drosselt den Abgleich kurz. Die Web-Version wartet automatisch.');e.rateLimited=true;throw e;}const method=String(opt.method||'GET').toUpperCase(),label=path.startsWith('/api/events/push')?'Störungen/Arbeiten an Dropbox senden':path.startsWith('/api/events/pull')?'Störungen/Arbeiten aus Dropbox lesen':path.startsWith('/api/backup')?'Anlagen-Datenstand in Dropbox speichern/lesen':path.startsWith('/api/bootstrap')?'Dropbox-Startdaten lesen':path.startsWith('/api/media')?'Datei/PDF mit Dropbox abgleichen':'Dropbox-API';const e=Error((j?.error?j.error+' · ':'')+'Serverfehler '+r.status+' bei '+method+' '+path+' · '+label);e.response=j;e.status=r.status;e.apiPath=path;e.apiMethod=method;throw e;}
+  if(!r.ok){if(r.status===429){const h=Number(r.headers.get('Retry-After')||0),b=Number(j?.retryAfter||0),seconds=Math.max(10,Math.min(300,h||b||30));rateLimitUntil=Math.max(rateLimitUntil,Date.now()+seconds*1000);const e=Error('Dropbox drosselt den Abgleich kurz. Die Web-Version wartet automatisch.');e.rateLimited=true;throw e;}const e=Error(j?.error||('Serverfehler '+r.status));e.response=j;e.status=r.status;throw e;}
   return j;
  }
  function storeLocal(raw,dirty=true){
@@ -79,7 +79,7 @@
     if(editSeq===uploadSeq&&rawSame(protectedRaw,confirmedRaw)){
       currentRaw=confirmedRaw;
       S?.setStateRaw?.(confirmedRaw,{dirty:false});S?.setBaseRaw?.(confirmedRaw);S?.setBaseAt?.(verify.latestAt||j.at||0);S?.markClean?.(confirmedRaw,verify.latestAt||j.at||0);S?.setUploadedAt?.(verify.latestAt||j.at||lastUploaded);S?.cacheBootstrap?.(verify);
-      lastUploaded=Number(verify.latestAt||j.at||lastUploaded);remoteList=Array.isArray(verify.backups)?verify.backups:remoteList;backupQueued=false;lastError='';if(!eventApiSupported){S?.setQueue?.('fault',[]);S?.setQueue?.('work',[]);S?.setNeedsReconcile?.(false);}
+      lastUploaded=Number(verify.latestAt||j.at||lastUploaded);remoteList=Array.isArray(verify.backups)?verify.backups:remoteList;backupQueued=false;lastError='';
       applyToUi(confirmedRaw,'remote');emit('cloudChanged');
       if(startedWithOffline&&window.toast)setTimeout(()=>toast('Offline-Änderungen wurden bestätigt und mit Dropbox synchronisiert.'),50);
       return true;
@@ -113,12 +113,11 @@
   if(!online()||rateWait()>0)return false;
   const rows=S?.getQueue?.(type)||[];if(!rows.length){pullEvents(type);return true;}
   const sending=rows.slice();
-  if(!eventApiSupported){backupQueued=true;S?.setNeedsReconcile?.(true);setTimeout(()=>commitPending(),100);return false;}
   try{await api('/api/events/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,events:sending})});const ids=new Set(sending.map(e=>e.eventId)),left=(S?.getQueue?.(type)||[]).filter(e=>!ids.has(e.eventId));S?.setQueue?.(type,left);lastError='';emit('cloudChanged');setTimeout(()=>pullEvents(type),200);return true;}
-  catch(e){if(e.status===405){eventApiSupported=false;backupQueued=true;S?.setNeedsReconcile?.(true);lastError='';setTimeout(()=>commitPending(),100);emit('cloudChanged');return false;}if(e.offline)S?.setNeedsReconcile?.(true);lastError=e.rateLimited?'Dropbox-Abgleich pausiert kurz und wird automatisch fortgesetzt.':e.message;if(!e.rateLimited&&!e.offline)emit('nativeMessage',e.message);emit('cloudChanged');return false;}
+  catch(e){if(e.offline)S?.setNeedsReconcile?.(true);lastError=e.rateLimited?'Dropbox-Abgleich pausiert kurz und wird automatisch fortgesetzt.':e.message;if(!e.rateLimited&&!e.offline)emit('nativeMessage',e.message);emit('cloudChanged');return false;}
  }
  async function pullEvents(type){
-  if(!eventApiSupported||!online()||rateWait()>0)return;
+  if(!online()||rateWait()>0)return;
   try{const cursor=type==='fault'?faultCursor:workCursor,j=await api('/api/events/pull?type='+encodeURIComponent(type)+(cursor?'&cursor='+encodeURIComponent(cursor):''));if(type==='fault')faultCursor=String(j.cursor||'');else workCursor=String(j.cursor||'');S?.setCursor?.(type,type==='fault'?faultCursor:workCursor);if(Array.isArray(j.events)&&j.events.length)emit(type==='fault'?'receiveFaultSync':'receiveWorkSync',j.events);lastError='';}catch(e){if(e.offline)S?.setNeedsReconcile?.(true);lastError=e.rateLimited?'Dropbox-Abgleich pausiert kurz und wird automatisch fortgesetzt.':e.message;}
  }
  async function pollSharedState(){
