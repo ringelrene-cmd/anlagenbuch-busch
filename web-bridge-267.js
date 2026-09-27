@@ -66,7 +66,7 @@
     let uploadRaw=candidate;
     if(editSeq!==seqBefore){uploadRaw=S?.mergeThreeWay?.(candidate,currentRaw,candidate)||currentRaw;storeLocal(uploadRaw,true);}
     const uploadSeq=editSeq;
-    const j=await api('/api/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:uploadRaw,at:Date.now(),clientBaseAt:m.remoteAt})});
+    const j=await api('/api/save-state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({raw:uploadRaw,at:Date.now(),clientBaseAt:m.remoteAt})});
     lastUploaded=Number(j.at)||Date.now();S?.setUploadedAt?.(lastUploaded);remoteList=j.backups||remoteList;
 
     // Critical 2.32 step: read Dropbox again. Only a state that is really visible there can be marked clean.

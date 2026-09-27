@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const CACHE='anlagenbuch-media-2.49';
+ const CACHE='anlagenbuch-media-2.72';
  const PDFJS_URL='/vendor/pdfjs/pdf.js';
  const PDFJS_WORKER_URL='/vendor/pdfjs/pdf.worker.js';
  let pdfJsPromise=null,activeDoc=null,renderToken=0;

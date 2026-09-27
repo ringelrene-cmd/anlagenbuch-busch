@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const CURRENT='2.49';
+const CURRENT='2.72';
 let checked=false;
 const escu=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function show(info){
