@@ -1,0 +1,6 @@
+Anlagenbuch Web 2.49 – 405-Fix 2
+
+Die API wird durch _worker.js bereitgestellt.
+Wenn /api/login weiterhin HTTP 405 liefert, wurde _worker.js von der Cloudflare-Bereitstellung nicht als Worker aktiviert.
+Die Datei _worker.js muss im Stammverzeichnis der hochgeladenen ZIP liegen.
+Test nach Bereitstellung: /api/ping muss JSON mit worker=true und version=2.49-405fix2 liefern.
