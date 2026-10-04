@@ -23,7 +23,7 @@ export class Coordinator {
   }
   if(path==='/api/media'&&req.method==='GET'){
    const uri=u.searchParams.get('uri'),name=mediaName(uri);let bytes=await this.store.get(name);
-   // 2.82: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
+   // OneDrive-Migration: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
    // eine fehlende Mediendatei automatisch aus dem letzten Backup zurückholen.
    if(!bytes){
     const backup=await this.store.read('backup-latest.json');const encoded=backup?.media?.[uri];

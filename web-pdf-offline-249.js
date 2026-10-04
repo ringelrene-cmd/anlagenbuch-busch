@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const CACHE='anlagenbuch-media-2.83';
+ const CACHE='anlagenbuch-media-2.84';
  const PDFJS_URL='/vendor/pdfjs/pdf.js';
  const PDFJS_WORKER_URL='/vendor/pdfjs/pdf.worker.js';
  let pdfJsPromise=null,activeDoc=null,renderToken=0;
@@ -47,7 +47,7 @@
   }
   // The attachment ID describes the link, not a different file.
   if(attachmentId){const original=await findCached(uriUrl(uri));if(original)return original;}
-  throw Error('PDF fehlt im gemeinsamen OneDrive-Speicher (404). Bitte diese PDF einmal auf dem Rechner öffnen, auf dem sie noch funktioniert. Version 2.83 überträgt die lokale Kopie dann automatisch nach OneDrive; danach am Handy erneut öffnen.');
+  throw Error('PDF fehlt im gemeinsamen OneDrive-Speicher (404). Bitte diese PDF einmal auf dem Rechner öffnen, auf dem sie noch funktioniert. Version 2.84 überträgt die lokale Kopie dann automatisch nach OneDrive; danach am Handy erneut öffnen.');
  }
 
  async function repairRemote(uri,response){

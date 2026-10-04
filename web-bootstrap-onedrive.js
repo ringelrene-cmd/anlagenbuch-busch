@@ -7,16 +7,24 @@
   const locked=await new Promise((resolve,reject)=>{navigator.locks.request('anlagenbuch-edit',{ifAvailable:true},async lock=>{resolve(!!lock);if(lock)await held;}).catch(reject);});
   if(!locked)throw Error('Das Anlagenbuch ist bereits in einem anderen Tab geöffnet. Bitte dort weiterarbeiten oder den anderen Tab schließen.');
   window.addEventListener('pagehide',()=>release());
-  for(const src of ['sync-merge.js','migrate-local.js'])await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v=2.83';s.onload=resolve;s.onerror=reject;document.body.append(s);});
+  for(const src of ['sync-merge.js','migrate-local.js'])await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v=2.84';s.onload=resolve;s.onerror=reject;document.body.append(s);});
   await migrateLocalOneDrive();
-  const d=localStorage.getItem('anlagenbuch-onedrive-v1');let boot={};
-  if(!d&&!OfflineStore.getStateRaw()){
-   const r=await fetch('/api/bootstrap',{credentials:'same-origin',cache:'no-store'});
+  // 2.84: Bei jedem Online-Start den zentralen Stand und die Serverversion lesen.
+  // Lokale Daten werden dabei nicht verworfen; OneDriveSync führt sie anschließend
+  // per Drei-Wege-Merge mit diesem Stand zusammen.
+  let boot={};
+  if(navigator.onLine!==false){
+   const [vr,r]=await Promise.all([
+    fetch('/api/version',{credentials:'same-origin',cache:'no-store'}),
+    fetch('/api/bootstrap',{credentials:'same-origin',cache:'no-store'})
+   ]);
    if(r.status===401){location.replace('/login.html');return;}
+   const version=await vr.json().catch(()=>({}));
    boot=await r.json();if(!r.ok)throw Error(boot.error||'Server nicht erreichbar.');
+   if(vr.ok&&version.version&&!String(version.version).startsWith('2.84'))throw Error('Web-Update noch nicht vollständig veröffentlicht. Server meldet '+version.version+'.');
   }
   window.__WEB_BOOTSTRAP__=boot;
-  for(const src of ["sync-merge.js","onedrive-client.js","web-pdf-offline-249.js","seed-preview.js","btf-data.js","module1-data.js","annex-data.js","pump-unit-data.js","pump-serial-data-247.js","core.js","pump-serial-migration-247.js","default-psa-migration-242.js","equipment.js","units-248.js","qrcode-runtime.js","app-249.js","batch-search.js","onedrive-ui.js","pool-links.js","handling-multi-249.js","global-sync-247.js","help-data.js","help-image-viewer.js","help.js","widget.js","settings-menu.js","web-ui-249.js"])await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src=src+'?v=2.83';x.onload=resolve;x.onerror=()=>reject(Error(src+' konnte nicht geladen werden.'));document.body.append(x);});
+  for(const src of ["sync-merge.js","onedrive-client.js","web-pdf-offline-249.js","seed-preview.js","btf-data.js","module1-data.js","annex-data.js","pump-unit-data.js","pump-serial-data-247.js","core.js","pump-serial-migration-247.js","default-psa-migration-242.js","equipment.js","units-248.js","qrcode-runtime.js","app-249.js","batch-search.js","onedrive-ui.js","pool-links.js","handling-multi-249.js","global-sync-247.js","help-data.js","help-image-viewer.js","help.js","widget.js","settings-menu.js","web-ui-249.js"])await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src=src+'?v=2.84';x.onload=resolve;x.onerror=()=>reject(Error(src+' konnte nicht geladen werden.'));document.body.append(x);});
   loading.hidden=true;
  }catch(e){loading.textContent=e.message;}
 })();
