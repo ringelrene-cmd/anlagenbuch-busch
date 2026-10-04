@@ -54,7 +54,7 @@
   if(!backup)throw Error('Noch kein Backup vorhanden.');
   const next=AppCore.validate(backup.state);
   if(!confirm('Backup vom '+new Date(backup.at).toLocaleString('de-DE')+' wiederherstellen? Änderungen seit diesem Backup werden als bewusste Änderungen zum Abgleich vorgemerkt.'))return;
-  const cache=await caches.open('anlagenbuch-media-2.81');for(const [uri,encoded] of Object.entries(backup.media||{})){const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));await cache.put(mediaUrl(uri),new Response(bytes,{headers:{'Content-Type':uri.includes('pdf:')?'application/pdf':'image/jpeg'}}));}
+  const cache=await caches.open('anlagenbuch-media-2.82');for(const [uri,encoded] of Object.entries(backup.media||{})){const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));await cache.put(mediaUrl(uri),new Response(bytes,{headers:{'Content-Type':uri.includes('pdf:')?'application/pdf':'image/jpeg'}}));}
   await backupStore({backup,pending:false});persist({...d,restorePending:true});if(!save(JSON.stringify(next)))throw Error(error);apply();window.toast?.('Backup wiederhergestellt. Abgleich vorgemerkt.');
  }catch(e){window.nativeMessage?.(e.message);}}
  function resolveConflicts(choices,displayed){
@@ -69,7 +69,7 @@
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
- async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.81');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
+ async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.82');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
  window.Native={load:()=>d.local?JSON.stringify(d.local):'',seed:()=>window.SEED_TEXT||'',save,
   makeBackup:raw=>save(raw),backupStatus:()=>JSON.stringify(OneDriveSync.status()),retryCloud:()=>{sync();uploadBackup();return true;},
   queueFaultSync:()=>true,queueFaultSyncBatch:()=>true,queueWorkSync:()=>true,queueWorkSyncBatch:()=>true,syncFaults:()=>{sync();return true;},syncWork:()=>{sync();return true;},resetFaultSyncForRestore:()=>true,resetWorkSyncForRestore:()=>true,

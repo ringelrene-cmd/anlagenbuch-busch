@@ -23,7 +23,7 @@ export class Coordinator {
   }
   if(path==='/api/media'&&req.method==='GET'){
    const uri=u.searchParams.get('uri'),name=mediaName(uri);let bytes=await this.store.get(name);
-   // 2.81: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
+   // 2.82: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
    // eine fehlende Mediendatei automatisch aus dem letzten Backup zurückholen.
    if(!bytes){
     const backup=await this.store.read('backup-latest.json');const encoded=backup?.media?.[uri];
@@ -75,7 +75,7 @@ export class Coordinator {
    let total=0;for(const uri of Object.keys(media)){const name=mediaName(uri),b=await this.store.get(name);if(!b)throw Error('Backup abgebrochen: Datei fehlt '+name);total+=b.length;if(total>60*1024*1024)throw Error('Backup größer als 60 MB. Administrator muss das Speicherlimit erweitern.');let str='';for(let i=0;i<b.length;i+=8192)str+=String.fromCharCode(...b.slice(i,i+8192));media[uri]=btoa(str);}
    const backup={format:'anlagenbuch-backup-v1',at:Date.now(),revision:doc.revision,state:doc.state,media};await this.store.write('backup-latest.json',backup);return response({ok:true,backup});
   }
-  return response({error:'Diese alte Synchronisationsschnittstelle ist abgeschaltet. App neu laden.'},410);
+  return response({error:'API-Endpunkt nicht verfügbar.',path},404);
  }
 }
 export function mediaName(uri){

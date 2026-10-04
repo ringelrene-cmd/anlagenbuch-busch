@@ -17,7 +17,7 @@ test('PDF refreshes online, preserves offline copy and falls back on server outa
  const ctx={caches,navigator:{onLine:true},AbortSignal,fetch:async()=>{calls++;return new Response('new');}};ctx.window=ctx;
  vm.runInNewContext(source('web-pdf-offline-249.js'),ctx);
  await ctx.WebPdfOffline.ensure('web-pdf://temp/test.pdf');assert.equal(calls,1);
- assert.equal(await(await(await caches.open('anlagenbuch-media-2.81')).match(url)).text(),'new');
+ assert.equal(await(await(await caches.open('anlagenbuch-media-2.82')).match(url)).text(),'new');
  ctx.navigator.onLine=false;await ctx.WebPdfOffline.ensure('web-pdf://temp/test.pdf','link-id');assert.equal(calls,1);
  ctx.navigator.onLine=true;ctx.fetch=async()=>new Response('',{status:503});await ctx.WebPdfOffline.ensure('web-pdf://temp/test.pdf');
  ctx.fetch=async()=>new Response('',{status:401});await assert.rejects(ctx.WebPdfOffline.ensure('web-pdf://temp/test.pdf'),/401/);
