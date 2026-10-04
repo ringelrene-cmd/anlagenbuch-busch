@@ -1,8 +1,0 @@
-Anlagenbuch Web 2.13
-
-- Dropbox-Fehler 409 beim automatischen Abgleich behoben.
-- Veraltete PDF-/Medienverweise aus länger geöffneten Browser-Sitzungen blockieren neue Sicherungen nicht mehr.
-- Neu angelegte oder geänderte Units können dadurch wieder zuverlässig über den gemeinsamen Dropbox-Datenstand auf andere Web-Geräte übernommen werden.
-- Unit löschen jetzt zusätzlich direkt in der Unit-Detailansicht sichtbar.
-- Beim Löschen einer Unit werden zugehörige Einträge aus dem Tagesgeschäft mit bereinigt.
-- Begleit-Apps bleiben unverändert Version 2.12; sie werden weiterhin über „Begleit-App installieren“ angeboten.

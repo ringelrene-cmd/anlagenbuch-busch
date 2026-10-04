@@ -1,9 +1,0 @@
-Anlagenbuch Web 2.37
-
-- Interner PDF-Viewer nutzt den kompatibleren PDF.js-Legacy-Build 3.11.174 statt PDF.js 6.x.
-- Behebt den Fehler "getOrInsertComputed is not a function" auf Browsern/Handys mit aelterer JavaScript-Unterstuetzung.
-- Hantierungsanweisungen bleiben innerhalb der Web-App.
-- Zwei-Finger-Geste vergroessert/verkleinert PDFs auf Android und Apple-Geraeten.
-- Wischen nach links/rechts wechselt die PDF-Seite.
-- Windows/macOS: Strg/Cmd + Mausrad zoomt; Pfeiltasten/Bild auf-ab wechseln Seiten.
-- Viewer und Worker werden lokal zwischengespeichert und funktionieren nach dem ersten Online-Start offline.

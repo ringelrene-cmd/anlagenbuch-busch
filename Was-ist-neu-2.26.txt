@@ -1,9 +1,0 @@
-Anlagenbuch Web / Android-Begleiter 2.26
-
-- Android-Störungsalarm robuster gemacht.
-- Sirene wird direkt aus assets/siren.wav wiedergegeben.
-- Alarm-Lautstärke wird für die Sirene nötigenfalls kurz angehoben und danach wieder auf den vorherigen Wert zurückgesetzt.
-- Android-Benachrichtigung selbst bleibt stumm, damit kein Systemton dazwischenkommt.
-- Vibration des neuen Alarmkanals deaktiviert: es soll nur die Anlagenbuch-Sirene zu hören sein.
-- Neuer Knopf „Alarmton testen“ im Android-Begleiter.
-- Widget und Passwortspeicherung unverändert.

@@ -1,7 +1,0 @@
-Anlagenbuch Web 2.16
-
-- Lageplan-Kompatibilität repariert.
-- Ein leerer oder alter Lageplan-Verweis blockiert nicht mehr das Laden des gesamten Anlagenbuchs.
-- Fehlt die Lageplan-Dateireferenz, wird automatisch der mitgelieferte Standard-Lageplan verwendet.
-- Anlagenbestand, Units, Störungen und Einstellungen bleiben davon unberührt.
-- Flexible Anlagenwerte aus 2.15 bleiben erhalten.

@@ -1,9 +1,0 @@
-Anlagenbuch Web 2.34
-
-- Handy-Zurücktaste und Browser-Zurück navigieren jetzt innerhalb des Anlagenbuchs, statt die Web-App aus einer Unit/Anlage sofort zu schließen.
-- Auf der Startseite bleibt Zurück im Anlagenbuch; aus einer Unit geht es zuerst zur Anlage, aus der Anlage zurück zur Suche.
-- Die Modulbezeichnungen „Nicht zugeordnet“ und „Noch nicht zugeordnet“ werden einmalig zu „Nicht zugeordnet“ zusammengeführt; doppelte Schreibweisen werden bereinigt.
-- Hantierungsanweisungs-PDFs öffnen in der Web-Version wieder direkt.
-- Alle vorhandenen Pool-PDFs werden bei Internetverbindung automatisch lokal im Browser vorgeladen und stehen danach auch offline zur Verfügung.
-- Unit-Zuweisungen für Hantierungsanweisungen wurden repariert: nur echte Pool-Anweisungen werden angeboten, die ausgewählte Anweisung wird in der Unit angezeigt und ihre PDFs können direkt geöffnet werden.
-- Unit-Zuweisungen können auch offline geändert werden; sie werden mit dem übrigen Datenstand synchronisiert, sobald wieder Internet verfügbar ist.

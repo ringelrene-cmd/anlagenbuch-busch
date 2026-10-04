@@ -1,6 +1,0 @@
-Anlagenbuch Web 2.18
-
-- „Pumpenmodell (optional)“ wurde aus „Anlage bearbeiten“ entfernt.
-- Änderung gilt zentral für alle Anlagen.
-- Pumpenmodell wird ausschließlich bei den einzelnen Units gepflegt.
-- Bestehende alte Anlagen-Pumpenmodellwerte werden beim Bearbeiten nicht gelöscht, aber nicht mehr in der Anlagenmaske angeboten.

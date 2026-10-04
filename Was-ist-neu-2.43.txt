@@ -1,9 +1,0 @@
-Anlagenbuch Web 2.43
-
-- Seriennummern werden aus Pumpenbezeichnung.xlsx erneut sicher in alle passenden Units nachgetragen.
-- Fehlerhafte alte Importmarkierungen aus 2.40/2.41/2.42 blockieren das Nachtragen nicht mehr.
-- Vorhandene oder später manuell geänderte Seriennummern bleiben unverändert.
-- Jede Unit erhält eine eigene Importmarkierung, damit ein später bewusst geleertes oder geändertes Seriennummernfeld nicht wieder überschrieben wird.
-- Das Feld Seriennummer ist bei allen Units dauerhaft sichtbar und weiterhin bearbeitbar.
-- Seriennummer wird in der normalen Unit-Datenübersicht zusammen mit Unit/Type/Typ angezeigt; das separate Feld oberhalb von Tagesgeschäft entfällt.
-- PSA-Grundbelegung aus 2.42 bleibt erhalten und weiterhin je Unit änderbar.

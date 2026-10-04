@@ -1,8 +1,0 @@
-Anlagenbuch Web / Android-Begleiter 2.29
-
-- Android-Widget und Störungsprüfung laufen nach normalem Schließen/Wegwischen der App im Hintergrund weiter.
-- Der Hintergrundempfänger plant den nächsten Abgleich bereits vor dem Netzabruf erneut ein, damit die Aktualisierungskette bei einem einzelnen Fehler nicht abreißt.
-- Widget aktualisiert Offene Störungen, In Bearbeitung und Tagesgeschäft weiterhin direkt aus dem Web-Status.
-- Der Alarmton bleibt ausschließlich für wirklich neue Störungen aktiv.
-- Gespeichertes Web-Passwort und vorhandene Widget-Daten bleiben beim Update erhalten.
-- Version und Begleiter-Download auf 2.29 vereinheitlicht.

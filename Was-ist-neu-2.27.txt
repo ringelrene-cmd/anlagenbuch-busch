@@ -1,6 +1,0 @@
-Anlagenbuch Web / Android-Begleiter 2.27
-
-- Android-Sirene korrigiert: komprimierte siren.wav wird zuerst in den privaten Cache kopiert und anschließend von dort abgespielt.
-- Wiedergabe nutzt den hörbaren Benachrichtigungs-Audiostream; die Systembenachrichtigung selbst bleibt stumm.
-- Alarmton testen verwendet exakt denselben Wiedergabeweg wie eine echte neue Störung.
-- Widget, Passwortspeicherung und automatische Web-Anmeldung unverändert.

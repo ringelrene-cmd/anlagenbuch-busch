@@ -1,5 +1,0 @@
-Anlagenbuch Web / Android-Begleiter 2.25
-
-- Android: Benachrichtigung selbst ist stumm; kein Android-Standardton mehr.
-- Android: Bei einer neuen Störung spielt die Begleit-App den eingebauten Anlagenbuch-Sirenenton direkt als Alarm-Audio ab.
-- Widget, Passwortspeicherung und Web-Anmeldung bleiben unverändert.

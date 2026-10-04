@@ -1,7 +1,0 @@
-Anlagenbuch Web 2.21
-
-- Android-Begleit-App aktualisiert auf 2.21.
-- Button „Web-Anlagenbuch öffnen“ korrigiert.
-- Android-Benachrichtigungsfreigabe wird beim Start der Begleit-App angefordert.
-- Hintergrundprüfung auf neue Störungen wird beim Öffnen der Begleit-App eingeplant.
-- Neues quadratisches BUSCH-Logo in der Android-Begleit-App.
