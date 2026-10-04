@@ -167,7 +167,7 @@ function todayRows(){
 window.getTodayRows=todayRows;
 window.getTodayOpenCount=()=>todayRows().filter(r=>!r.done).length;
 function saveToday(rows){
- const date=todayDate(),s=C.clone(state);s.dailyBusiness=(Array.isArray(s.dailyBusiness)?s.dailyBusiness:[]).filter(r=>r&&r.date!==date).concat(rows.map(r=>({...r,date})));
+ const date=todayDate(),s=C.clone(state);s.dailyBusiness=(Array.isArray(s.dailyBusiness)?s.dailyBusiness:[]).filter(r=>r&&r.date!==date).concat(rows.map(r=>({...r,id:r.id||('today-'+date+'-'+r.assetId+'-'+r.unitId),date})));
  if(!persist(s))return false;
  try{localStorage.removeItem('anlagenbuch-tagesliste-'+date);}catch(_){}
  return true;
@@ -176,7 +176,7 @@ function addToToday(assetId,unitId){
  const rows=todayRows();
  if(!rows.some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done)){
    const old=rows.find(r=>r.assetId===assetId&&r.unitId===unitId);
-   if(old)old.done=false;else rows.push({assetId,unitId,date:todayDate(),done:false});
+   if(old)old.done=false;else rows.push({id:'today-'+todayDate()+'-'+assetId+'-'+unitId,assetId,unitId,date:todayDate(),done:false});
    if(saveToday(rows)){toast('Pumpe für Arbeiten Heute – Tagesgeschäft vorgemerkt.');render();if(window.updateTodayButton)window.updateTodayButton();if(window.publishWidget)window.publishWidget();}
  }else toast('Pumpe ist für heute bereits vorgemerkt.');
 }

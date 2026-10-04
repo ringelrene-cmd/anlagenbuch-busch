@@ -29,6 +29,23 @@ function merge(base,local,remote){
     const bm=map(b),lm=map(l),rm=map(r),out=[];
     for(const id of new Set([...rm.keys(),...lm.keys(),...bm.keys()])){const v=walk(bm.get(id),lm.get(id),rm.get(id),[...path,{id}]);if(v!==undefined)out.push(v);}return out;
    }
+   // Tagesgeschäft hatte historisch keine id. Für den Geräteabgleich wird jeder
+   // Eintrag deshalb stabil über Datum + Anlage + Unit identifiziert. Dadurch
+   // können verschiedene Rechner Einträge hinzufügen/erledigen/löschen, ohne
+   // dass die komplette Tagesliste als ein Konflikt behandelt wird.
+   if(path.at(-1)==='dailyBusiness'&&all.every(x=>object(x)&&typeof x.date==='string'&&typeof x.assetId==='string'&&typeof x.unitId==='string')){
+    const key=x=>x.date+'\u0000'+x.assetId+'\u0000'+x.unitId;
+    const map=a=>{const m=new Map();for(const x of a||[]){const k=key(x);if(m.has(k))throw Error('Doppelter Tagesgeschäft-Eintrag.');m.set(k,x);}return m;};
+    const bm=map(b),lm=map(l),rm=map(r),out=[];
+    for(const id of new Set([...rm.keys(),...lm.keys(),...bm.keys()])){const v=walk(bm.get(id),lm.get(id),rm.get(id),[...path,{id,key:'dailyBusiness'}]);if(v!==undefined)out.push(v);}return out;
+   }
+   // Ältere Änderungsverläufe können ebenfalls noch ohne id vorliegen.
+   if(path.at(-1)==='settingsHistory'&&all.every(x=>object(x)&&typeof x.at==='string'&&typeof x.author==='string')){
+    const key=x=>x.at+'\u0000'+x.author;
+    const map=a=>{const m=new Map();for(const x of a||[]){const k=key(x);if(m.has(k))throw Error('Doppelter Änderungsverlauf.');m.set(k,x);}return m;};
+    const bm=map(b),lm=map(l),rm=map(r),out=[];
+    for(const id of new Set([...rm.keys(),...lm.keys(),...bm.keys()])){const v=walk(bm.get(id),lm.get(id),rm.get(id),[...path,{id,key:'settingsHistory'}]);if(v!==undefined)out.push(v);}return out;
+   }
    if(all.every(x=>object(x)&&typeof x.name==='string')&&[b||[],l,r].every(a=>new Set(a.map(x=>x.name)).size===a.length)){
     const bm=new Map((b||[]).map(x=>[x.name,x])),lm=new Map(l.map(x=>[x.name,x])),rm=new Map(r.map(x=>[x.name,x])),out=[];
     for(const id of new Set([...rm.keys(),...lm.keys(),...bm.keys()])){const v=walk(bm.get(id),lm.get(id),rm.get(id),[...path,{id,key:'name'}]);if(v!==undefined)out.push(v);}return out;
