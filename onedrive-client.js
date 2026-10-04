@@ -26,7 +26,7 @@
  function persist(next){
   const packed=M.pack(next);d=next;storePacked(packed);
  }
- function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');}finally{applying=false;}}
+ function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');window.dispatchEvent(new CustomEvent('anlagenbuch:remote-applied',{detail:{revision:Number(d.revision||0)}}));}finally{applying=false;}}
  const dirty=()=>!M.same(d.base,d.local);
  async function api(path,opt={}){
   if(navigator.onLine===false)throw Error('Offline – Änderungen bleiben auf diesem Gerät.');
@@ -175,5 +175,5 @@
    }
   }catch(_){}
  }
- setInterval(()=>{if(document.hidden)return;sync();livePull();revisionWatch();},8000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
+ setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();},300);
 })();

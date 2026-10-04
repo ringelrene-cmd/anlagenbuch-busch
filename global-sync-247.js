@@ -16,7 +16,7 @@ window.applyMergedWebState=raw=>{
   if(typeof migrateDefaultPsa242==='function')next=migrateDefaultPsa242(next).state;
   next=C.validate(next);
   const ok=persist(next);if(!ok)return false;
-  render();refreshFaultOverview();
+  render();refreshFaultOverview();if(window.updateTodayButton)window.updateTodayButton();if(window.updateHeaderSummary)window.updateHeaderSummary();
   const newFaults=[];for(const a of state.assets||[])for(const f of a.faults||[])if(f&&f.id&&!before.has(f.id)&&f.status==='open')newFaults.push({asset:a,fault:f});
   if(newFaults.length&&window.alertNewFaultsOnce)window.alertNewFaultsOnce(newFaults);
   return true;
