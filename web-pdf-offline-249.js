@@ -33,14 +33,32 @@
    try{
     const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(15000)});
     if(r.ok){try{await(await caches.open(CACHE)).put(url,r.clone());}catch(_){}return r;}
-    if(r.status<500&&r.status!==429)throw Object.assign(Error('PDF konnte nicht geladen werden ('+r.status+').'),{noFallback:true});
+    // Bei 404 kann die Datei nach der OneDrive-Umstellung auf dem Server fehlen,
+    // obwohl auf diesem Gerät noch eine gültige Offline-Kopie vorhanden ist.
+    // Deshalb erst den lokalen Cache prüfen, statt die PDF sofort abzulehnen.
+    if(r.status<500&&r.status!==429&&r.status!==404)throw Object.assign(Error('PDF konnte nicht geladen werden ('+r.status+').'),{noFallback:true});
    }catch(e){if(e.noFallback)throw e;}
   }
-  const hit=await findCached(url);if(hit)return hit;
+  const hit=await findCached(url);if(hit){
+   // Fehlende OneDrive-Medien aus einer vorhandenen lokalen Kopie selbst reparieren.
+   // Der Upload ist best-effort; zum Öffnen genügt weiterhin die lokale Kopie.
+   if(allowNetwork&&navigator.onLine!==false)repairRemote(uri,hit.clone()).catch(()=>{});
+   return hit;
+  }
   // The attachment ID describes the link, not a different file.
   if(attachmentId){const original=await findCached(uriUrl(uri));if(original)return original;}
-  throw Error('Die PDF ist auf diesem Gerät noch nicht offline gespeichert. Bitte die Web-App einmal mit Internet öffnen; danach bleibt sie lokal verfügbar.');
+  throw Error('PDF fehlt im gemeinsamen OneDrive-Speicher (404). Bitte diese PDF einmal auf dem Rechner öffnen, auf dem sie noch funktioniert. Version 2.81 überträgt die lokale Kopie dann automatisch nach OneDrive; danach am Handy erneut öffnen.');
  }
+
+ async function repairRemote(uri,response){
+  try{
+   const bytes=new Uint8Array(await response.arrayBuffer());if(!bytes.length)return false;
+   let raw='';for(let i=0;i<bytes.length;i+=8192)raw+=String.fromCharCode(...bytes.slice(i,i+8192));
+   const r=await fetch('/api/backup/media',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({media:{[uri]:btoa(raw)}})});
+   return r.ok;
+  }catch(_){return false;}
+ }
+
  async function ensure(uri,attachmentId=''){await requestPersistence();await cachedResponse(uri,true,attachmentId);return true;}
 
  function loadClassicScript(src){

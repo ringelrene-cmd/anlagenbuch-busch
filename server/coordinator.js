@@ -22,7 +22,14 @@ export class Coordinator {
    const file=crypto.randomUUID()+'.'+ext;await this.store.put('media-'+file,bytes);return response({ok:true,uri:'web-'+kind+'://temp/'+file,name});
   }
   if(path==='/api/media'&&req.method==='GET'){
-   const uri=u.searchParams.get('uri'),name=mediaName(uri),bytes=await this.store.get(name);if(!bytes)return response({error:'Datei fehlt. Migration prüfen.'},404);
+   const uri=u.searchParams.get('uri'),name=mediaName(uri);let bytes=await this.store.get(name);
+   // 2.81: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
+   // eine fehlende Mediendatei automatisch aus dem letzten Backup zurückholen.
+   if(!bytes){
+    const backup=await this.store.read('backup-latest.json');const encoded=backup?.media?.[uri];
+    if(typeof encoded==='string'&&encoded){try{bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));if(bytes.length)await this.store.put(name,bytes);}catch(_){bytes=null;}}
+   }
+   if(!bytes)return response({error:'Datei fehlt im gemeinsamen OneDrive-Speicher. PDF auf einem Gerät mit vorhandener Offline-Kopie einmal öffnen.'},404);
    const ext=name.split('.').pop();return new Response(bytes,{headers:{'Content-Type':ext==='pdf'?'application/pdf':ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg','Cache-Control':'private, no-cache','X-Content-Type-Options':'nosniff'}});
   }
   if(path==='/api/backup/read'&&req.method==='GET'){const b=await this.store.read('backup-latest.json');if(!b)return response({error:'Noch kein Backup vorhanden.'},404);return response({ok:true,backup:b});}
