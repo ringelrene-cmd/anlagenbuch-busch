@@ -50,7 +50,7 @@ export class Coordinator {
    const local=AppCore.validate(body.local),base=body.base===null?null:AppCore.validate(body.base);
    if(!doc.state&&!this.store.allowInitialize)return response({error:'Migration noch nicht freigegeben. ONEDRIVE_ALLOW_INITIALIZE einmalig aktivieren.'},409);
    if(doc.state&&!base)return response({error:'Lokaler Ausgangsstand fehlt. Vor der Migration den lokalen Bestand sichern und abgleichen.'},409);
-   // 2.90: Konflikte blockieren nicht mehr die gesamte Transaktion. SyncMerge setzt
+   // 2.91: Konflikte blockieren nicht mehr die gesamte Transaktion. SyncMerge setzt
    // an Konfliktstellen bewusst den vorhandenen Zentralwert ein, enthält aber alle
    // unabhängigen lokalen Änderungen. Diese konfliktfreien Teile werden sofort
    // gespeichert; nur die widersprüchlichen Felder bleiben zur Auswahl offen.

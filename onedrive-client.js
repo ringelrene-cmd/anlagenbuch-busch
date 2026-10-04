@@ -15,7 +15,7 @@
   if(!d.local){d.local=M.copy(remote);d.base=M.copy(remote);d.revision=boot.revision||0;d.pending=null;d.conflicts=[];}
   else if(d.base){
    const start=M.merge(d.base,d.local,remote);
-   if(start.conflicts.length)d={...d,pending:null,conflicts:start.conflicts,conflictRemote:remote,conflictRevision:boot.revision||0};
+   if(start.conflicts.length)d={...d,local:start.state,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:start.conflicts,conflictRemote:remote,conflictRevision:boot.revision||0};
    else d={...d,local:start.state,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:[]};
   }else if(M.same(d.local,remote)){d={...d,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:[]};}
   storePacked(M.pack(d));
@@ -35,7 +35,7 @@
  }
  function accept(remote,revision,base){
   const m=M.merge(base,d.local,remote);
-  if(m.conflicts.length){persist({...d,base,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:revision});return;}
+  if(m.conflicts.length){persist({...d,local:m.state,base:M.copy(remote),revision,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:revision});apply();return;}
   persist({...d,local:m.state,base:remote,revision,pending:null,conflicts:[]});apply();
  }
  async function sync(){
@@ -43,7 +43,7 @@
   if(busy){syncAgain=true;return;}
   busy=true;syncAgain=false;error='';emit();
   try{
-   // 2.90: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
+   // 2.91: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
    // Der Server übernimmt bei /api/sync alle konfliktfreien Teile einer Transaktion
    // und lässt nur die tatsächlich widersprüchlichen Felder zur Auswahl offen.
    if(d.conflicts.length){
@@ -57,7 +57,7 @@
       if(e.status===409&&e.data&&e.data.state){
        const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;
        const m=M.merge(d.base,d.local,remote);
-       persist({...d,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:e.data.revision,revision:e.data.revision});
+       persist({...d,local:m.state,base:M.copy(remote),pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:e.data.revision,revision:e.data.revision});apply();
       }else throw e;
      }
     }else{
@@ -65,7 +65,7 @@
      if(j.state&&j.revision>=Number(d.conflictRevision||d.revision||0)){
       const remote=JSON.parse(j.state),m=M.merge(d.base,d.local,remote);
       if(!m.conflicts.length){persist({...d,local:m.state,base:remote,revision:j.revision,pending:null,conflicts:[],conflictRemote:null,conflictRevision:0});apply();}
-      else persist({...d,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:j.revision,revision:j.revision});
+      else {persist({...d,local:m.state,base:M.copy(remote),pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:j.revision,revision:j.revision});apply();}
      }
     }
     return;
@@ -83,7 +83,7 @@
     const j=await api('/api/bootstrap');
     if(j.state&&j.revision>=d.revision){const remote=JSON.parse(j.state);accept(remote,j.revision,d.base);}
    }
-  }catch(e){error=e.message;if(e.status===409&&e.data.conflicts){persist({...d,pending:null,conflicts:e.data.conflicts,conflictRemote:e.data.state,conflictRevision:e.data.revision});}}
+  }catch(e){error=e.message;if(e.status===409&&e.data.conflicts&&e.data.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
   finally{
    busy=false;emit();
    if(syncAgain&&navigator.onLine!==false)setTimeout(sync,0);
@@ -114,14 +114,14 @@
   await backupStore({backup,pending:false});persist({...d,restorePending:true});if(!save(JSON.stringify(next)))throw Error(error);apply();window.toast?.('Backup wiederhergestellt. Abgleich vorgemerkt.');
  }catch(e){window.nativeMessage?.(e.message);}}
  function resolveConflicts(choices,displayed){
-  // Recompute against current local edits; choices apply only to the displayed values.
-  const m=M.merge(d.base,d.local,d.conflictRemote);let next=m.state;
-  if(displayed&&!M.same(displayed,m.conflicts))throw Error('Die Werte haben sich inzwischen geändert. Bitte Konflikte erneut öffnen.');
-  if(choices.length!==m.conflicts.length||choices.some(x=>!['local','remote'].includes(x)))throw Error('Bitte für jeden aktuellen Konflikt eine Variante auswählen.');
-  m.conflicts.forEach((c,i)=>{if(choices[i]==='local')next=M.resolve(next,c.path,c.local,c.localMissing);});
-  persist({...d,base:d.conflictRemote,revision:d.conflictRevision,local:next,conflicts:[],pending:null});apply();sync();
+  if(!d.conflictRemote||!Array.isArray(d.conflicts)||!d.conflicts.length)throw Error('Keine Konflikte vorhanden.');
+  const rows=d.conflicts;let next=M.copy(d.conflictRemote);
+  if(displayed&&!M.same(displayed,rows))throw Error('Die Werte haben sich inzwischen geändert. Bitte Konflikte erneut öffnen.');
+  if(choices.length!==rows.length||choices.some(x=>!['local','remote'].includes(x)))throw Error('Bitte für jeden aktuellen Konflikt eine Variante auswählen.');
+  rows.forEach((c,i)=>{if(choices[i]==='local')next=M.resolve(next,c.path,c.local,c.localMissing);});
+  persist({...d,base:M.copy(d.conflictRemote),revision:d.conflictRevision,local:next,conflicts:[],conflictRemote:null,conflictRevision:0,pending:null});apply();sync();
  }
- window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.merge(d.base,d.local,d.conflictRemote||d.base).conflicts,status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,backups:[]})};
+ window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,backups:[]})};
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
@@ -140,7 +140,7 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- // 2.90: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
+ // 2.91: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
  // synchronisiert; zusätzlich gibt es nur einen sparsamen Abgleich alle 60 Sekunden.
  setInterval(sync,60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();
