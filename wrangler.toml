@@ -1,0 +1,13 @@
+name = "anlagenbuch-busch"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "SYNC"
+class_name = "AnlagenbuchSync"
+script_name = "anlagenbuch-onedrive"
+
+[[env.preview.durable_objects.bindings]]
+name = "SYNC"
+class_name = "AnlagenbuchSync"
+script_name = "anlagenbuch-onedrive-preview"

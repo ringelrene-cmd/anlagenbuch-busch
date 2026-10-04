@@ -1,0 +1,12 @@
+name = "anlagenbuch-onedrive"
+main = "coordinator.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[[durable_objects.bindings]]
+name = "SYNC"
+class_name = "AnlagenbuchSync"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AnlagenbuchSync"]

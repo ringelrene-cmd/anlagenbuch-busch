@@ -22,5 +22,5 @@ window.applyMergedWebState=raw=>{
   return true;
  }catch(_){return false;}
 };
-window.globalSyncPushNow=()=>{try{if(window.Native&&Native.makeBackup)Native.makeBackup(JSON.stringify(state));}catch(_){} };
+window.globalSyncPushNow=()=>{try{if(window.Native&&Native.makeBackup)Native.save(JSON.stringify(state));}catch(_){} };
 })();

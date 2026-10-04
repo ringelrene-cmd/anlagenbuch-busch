@@ -5,4 +5,14 @@ Copyright Mozilla and contributors
 License: Apache License 2.0
 Used by Anlagenbuch Web for the internal PDF renderer.
 
-The PDF.js browser script and worker are fetched server-side from jsDelivr through the same-origin Anlagenbuch worker endpoint and cached on the device for offline use.
+The PDF.js browser script and worker are bundled locally in vendor/pdfjs and cached on the device for offline use. isEvalSupported remains false.
+
+jsQR 1.4.0
+Copyright 2017 Cozmo jsQR contributors
+License: Apache License 2.0
+Bundled from https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js
+
+SHA-256:
+vendor/pdfjs/pdf.js 978fd1b2d134a98e98966186a97777bebf87d8e770dadab1ece3687e21a5aa6c
+vendor/pdfjs/pdf.worker.js 38cde5311957b86bc3669f93e7d2566de333a90055ed6635bef60d9bf00e96f2
+vendor/jsQR.js bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859

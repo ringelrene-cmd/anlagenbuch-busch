@@ -1,0 +1,7 @@
+dist/
+.local-test/
+.onedrive-secrets.json
+.dev.vars*
+migration-private*.json
+test-preview.png
+node_modules/

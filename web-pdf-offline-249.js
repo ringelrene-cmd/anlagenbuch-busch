@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const CACHE='anlagenbuch-media-2.72';
+ const CACHE='anlagenbuch-media-2.81';
  const PDFJS_URL='/vendor/pdfjs/pdf.js';
  const PDFJS_WORKER_URL='/vendor/pdfjs/pdf.worker.js';
  let pdfJsPromise=null,activeDoc=null,renderToken=0;
@@ -28,12 +28,18 @@
    if(!allowNetwork||navigator.onLine===false)throw Error('Die PDF ist auf diesem Gerät noch nicht offline gespeichert.');
    const r=await fetch(url,{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw Error('PDF konnte nicht geladen werden ('+r.status+').');return r;
   }
-  const cache=await caches.open(CACHE),hit=await findCached(url);
-  if(hit)return hit;
-  if(!allowNetwork||navigator.onLine===false)throw Error('Die PDF ist auf diesem Gerät noch nicht offline gespeichert. Bitte die Web-App einmal mit Internet öffnen; danach bleibt sie lokal verfügbar.');
-  const r=await fetch(url,{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw Error('PDF konnte nicht geladen werden ('+r.status+').');
-  try{await cache.put(url,r.clone());}catch(_){}
-  return r;
+  // Online, refresh the file. Keep the last usable copy for offline/network failure.
+  if(allowNetwork&&navigator.onLine!==false){
+   try{
+    const r=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(15000)});
+    if(r.ok){try{await(await caches.open(CACHE)).put(url,r.clone());}catch(_){}return r;}
+    if(r.status<500&&r.status!==429)throw Object.assign(Error('PDF konnte nicht geladen werden ('+r.status+').'),{noFallback:true});
+   }catch(e){if(e.noFallback)throw e;}
+  }
+  const hit=await findCached(url);if(hit)return hit;
+  // The attachment ID describes the link, not a different file.
+  if(attachmentId){const original=await findCached(uriUrl(uri));if(original)return original;}
+  throw Error('Die PDF ist auf diesem Gerät noch nicht offline gespeichert. Bitte die Web-App einmal mit Internet öffnen; danach bleibt sie lokal verfügbar.');
  }
  async function ensure(uri,attachmentId=''){await requestPersistence();await cachedResponse(uri,true,attachmentId);return true;}
 
@@ -132,7 +138,7 @@
 
  async function prefetchState(s){
   if(!s)return;
-  if(navigator.onLine!==false){const uris=[...new Set((s.instructionLibrary||[]).filter(x=>x&&x.attachmentOnly&&x.pdfUri).map(x=>x.pdfUri))];for(const uri of uris){try{await ensure(uri);}catch(_){} }}
+  if(navigator.onLine!==false){const uris=[...new Set((s.instructionLibrary||[]).filter(x=>x&&x.attachmentOnly&&x.pdfUri).map(x=>x.pdfUri))];for(const uri of uris){try{await cachedResponse(uri,false);}catch(_){try{await ensure(uri);}catch(_){}} }}
   try{await pdfJs();await fetch(PDFJS_WORKER_URL,{credentials:'same-origin',cache:'no-store'});}catch(_){}
  }
  window.WebPdfOffline={ensure,open,prefetchState,cacheName:CACHE};
