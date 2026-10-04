@@ -1,7 +1,7 @@
 {
   "name": "anlagenbuch-busch",
   "private": true,
-  "version": "2.99.0",
+  "version": "3.00.0",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs"
