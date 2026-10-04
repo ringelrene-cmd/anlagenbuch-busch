@@ -1,9 +1,0 @@
-{
-  "name": "anlagenbuch-busch",
-  "private": true,
-  "version": "2.93.0",
-  "type": "module",
-  "scripts": {
-    "build": "node scripts/build.mjs"
-  }
-}

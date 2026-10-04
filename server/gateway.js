@@ -6,14 +6,14 @@ async function authorized(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)
 
 async function companionAuthorized(req,env){const pw=String(env.WEB_PASSWORD||''),got=String(req.headers.get('X-Anlagenbuch-Password')||'');return !!pw&&got===pw;}
 async function persistentSessionCookie(env){const pw=String(env.WEB_PASSWORD||'');if(!pw)return'';const maxAge=365*24*3600,exp=Date.now()+maxAge*1000,t=exp+'.'+await hmac(pw,String(exp));return `ab_session=${t}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;}
-async function companionHandoffUrl(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)throw Error('WEB_PASSWORD ist noch nicht eingerichtet.');const exp=Date.now()+90000,sig=await hmac(pw,'handoff:'+exp),u=new URL('/companion-auth',req.url);u.searchParams.set('token',exp+'.'+sig);return u.toString();}
+async function companionHandoffUrl(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)throw Error('WEB_PASSWORD ist noch nicht eingerichtet.');const exp=Date.now()+90000,sig=await hmac(pw,'handoff:'+exp),u=new URL('/companion-auth','https://anlagenbuch-busch.pages.dev/');u.searchParams.set('token',exp+'.'+sig);return u.toString();}
 async function verifyCompanionHandoff(token,env){const pw=String(env.WEB_PASSWORD||''),m=String(token||'').match(/^(\d+)\.([0-9a-f]{64})$/);if(!pw||!m)return false;const exp=Number(m[1]),now=Date.now();if(!Number.isFinite(exp)||exp<now||exp>now+120000)return false;return (await hmac(pw,'handoff:'+m[1]))===m[2];}
 async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)return json({ok:false,error:'WEB_PASSWORD ist noch nicht eingerichtet.'},503);let body;try{body=await req.json();}catch(_){return json({ok:false,error:'Ungültige Anmeldung.'},400);}if(String(body.password||'')!==pw)return json({ok:false,error:'Passwort ist nicht richtig.'},401);return json({ok:true},200,{'Set-Cookie':await persistentSessionCookie(env)});}
 
 export async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'2.94-test',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'2.95',provider:'onedrive'});
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
