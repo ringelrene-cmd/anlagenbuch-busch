@@ -127,5 +127,7 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- setInterval(sync,2000);setInterval(uploadBackup,30000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
+ // 2.86: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
+ // synchronisiert; zusätzlich gibt es nur einen sparsamen Abgleich alle 60 Sekunden.
+ setInterval(sync,60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();
