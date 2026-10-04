@@ -1,0 +1,30 @@
+.webLoading{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#0d252a;color:#fff;font:600 18px system-ui;padding:24px;text-align:center}.webLoading[hidden]{display:none}.webLogin{min-height:100vh;display:grid;place-items:center;padding:24px;background:#0d252a;font-family:system-ui}.webLoginCard{width:min(440px,100%);background:#fff;color:#162a2e;border-radius:18px;padding:28px;box-shadow:0 20px 80px #0006}.webLoginCard img{display:block;max-width:230px;max-height:80px;margin:0 auto 18px}.webLoginCard h1{margin:0 0 8px}.webLoginCard input{box-sizing:border-box;width:100%;padding:13px 14px;margin:8px 0 14px}.webLoginCard button{width:100%;padding:13px}.webLoginError{color:#a21b1b;min-height:1.3em}.webBanner{position:fixed;right:12px;bottom:12px;z-index:9990;background:#15383f;color:#fff;border-radius:999px;padding:8px 12px;font:12px system-ui;box-shadow:0 4px 24px #0004}.webQrVideo{display:block;width:100%;max-height:58vh;object-fit:cover;background:#000;border-radius:12px}.webQrCanvas{display:none}
+
+/* 2.12 Installationscenter */
+.companionCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}.companionCards .record{margin:0}.companionCards .recommended{outline:2px solid #17745e}.buttonLink{display:inline-block;background:#17634f;color:#fff!important;text-decoration:none;padding:10px 14px;border-radius:9px;font-weight:700;margin-top:8px}.buttonLink:hover{filter:brightness(.95)}
+
+/* 2.34: eingebetteter, offline-fähiger PDF-Viewer */
+.webPdfFrame{display:block;width:100%;height:min(76vh,900px);min-height:520px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#fff;margin:10px 0}
+@media(max-width:700px){.webPdfFrame{height:70vh;min-height:440px}}
+
+/* 2.36: interner PDF-Viewer (kein neues Browserfenster) */
+#modal.pdfViewerDialog{width:calc(100% - 12px);max-width:1180px;height:96vh;max-height:96vh;padding:12px;overflow:hidden}
+#modal.pdfViewerDialog #modalContent{height:100%;display:flex;flex-direction:column;min-height:0}
+.pdfViewerHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pdfViewerHead h2{margin:0 0 4px;overflow-wrap:anywhere}
+.pdfViewerHead .hint{margin:0 0 8px}
+.pdfToolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:8px 0 10px;border-bottom:1px solid #d6dfda}
+.pdfToolbar button{min-height:38px;padding:8px 12px}
+.pdfToolbar strong,.pdfToolbar span{min-width:58px;text-align:center;font-size:13px}
+.webPdfHost{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#3f4548;border-radius:12px;padding:10px;text-align:center;-webkit-overflow-scrolling:touch}
+.webPdfCanvas{display:block;margin:0 auto;max-width:none;background:#fff;box-shadow:0 2px 16px #0007}
+.pdfLoading{color:#fff;padding:40px 12px;font-size:16px}
+.pdfError{color:#a43422!important;font-weight:700}
+.pdfErrorBox{background:#fff4f1;color:#7e3024;border-radius:10px;padding:18px;text-align:left;margin:16px auto;max-width:620px}
+@media(max-width:700px){#modal.pdfViewerDialog{width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:8px}.pdfViewerHead h2{font-size:18px}.pdfViewerHead button{min-height:38px;padding:8px 10px}.pdfToolbar{gap:5px}.pdfToolbar button{font-size:13px;padding:7px 9px}.webPdfHost{padding:6px;border-radius:8px}}
+
+
+/* 2.37: plattformuebergreifende PDF-Gesten */
+.webPdfHost{touch-action:pan-y;overscroll-behavior-x:contain;user-select:none;-webkit-user-select:none}
+.webPdfCanvas{transition:transform .06s linear;transform-origin:50% 0}
+@media (pointer:coarse){.pdfToolbar button{min-width:54px;min-height:44px}}
