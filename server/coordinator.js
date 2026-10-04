@@ -50,10 +50,20 @@ export class Coordinator {
    const local=AppCore.validate(body.local),base=body.base===null?null:AppCore.validate(body.base);
    if(!doc.state&&!this.store.allowInitialize)return response({error:'Migration noch nicht freigegeben. ONEDRIVE_ALLOW_INITIALIZE einmalig aktivieren.'},409);
    if(doc.state&&!base)return response({error:'Lokaler Ausgangsstand fehlt. Vor der Migration den lokalen Bestand sichern und abgleichen.'},409);
-   // Reject the entire transaction on conflict, including dependent changes.
+   // 2.90: Konflikte blockieren nicht mehr die gesamte Transaktion. SyncMerge setzt
+   // an Konfliktstellen bewusst den vorhandenen Zentralwert ein, enthält aber alle
+   // unabhängigen lokalen Änderungen. Diese konfliktfreien Teile werden sofort
+   // gespeichert; nur die widersprüchlichen Felder bleiben zur Auswahl offen.
    const merged=doc.state?M.merge(base,local,doc.state):{state:local,conflicts:[]};
-   if(merged.conflicts.length)return response({ok:false,error:'Widersprüchliche Änderungen bitte auswählen.',conflicts:merged.conflicts,state:doc.state,revision:doc.revision},409);
    const next=AppCore.validate(merged.state);await this.mediaPresent(next);
+   if(merged.conflicts.length){
+    let revision=doc.revision,at=doc.at||Date.now(),state=doc.state;
+    if(!M.same(next,doc.state)){
+     revision=doc.revision+1;at=Date.now();state=next;
+     await this.store.write('state.json',{...doc,state,revision,at});
+    }
+    return response({ok:false,error:'Widersprüchliche Änderungen bitte auswählen. Andere Änderungen wurden bereits synchronisiert.',conflicts:merged.conflicts,state,revision,at},409);
+   }
    const receipt={state:next,revision:doc.revision+1,at:Date.now()};
    // Receipt and state share one OneDrive write: lost responses can safely retry.
    // An offline client may retry long after 200 other edits. Keep its receipt,

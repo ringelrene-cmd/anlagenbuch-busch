@@ -43,15 +43,30 @@
   if(busy){syncAgain=true;return;}
   busy=true;syncAgain=false;error='';emit();
   try{
-   // Auch bei einem offenen Konflikt den neuesten Zentralstand nachladen. So friert
-   // ein Gerät nicht dauerhaft auf einem alten Stand ein. Lokale Werte bleiben bis
-   // zur Auswahl unangetastet.
+   // 2.90: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
+   // Der Server übernimmt bei /api/sync alle konfliktfreien Teile einer Transaktion
+   // und lässt nur die tatsächlich widersprüchlichen Felder zur Auswahl offen.
    if(d.conflicts.length){
-    const j=await api('/api/bootstrap');
-    if(j.state&&j.revision>=Number(d.conflictRevision||d.revision||0)){
-     const remote=JSON.parse(j.state),m=M.merge(d.base,d.local,remote);
-     if(!m.conflicts.length){persist({...d,local:m.state,base:remote,revision:j.revision,pending:null,conflicts:[],conflictRemote:null,conflictRevision:0});apply();}
-     else persist({...d,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:j.revision});
+    if(d.pending||dirty()){
+     if(!d.pending)persist({...d,pending:{id:crypto.randomUUID(),base:M.copy(d.base),local:M.copy(d.local)}});
+     const pending=d.pending;
+     try{
+      const j=await api('/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});
+      accept(j.state,j.revision,pending.local);
+     }catch(e){
+      if(e.status===409&&e.data&&e.data.state){
+       const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;
+       const m=M.merge(d.base,d.local,remote);
+       persist({...d,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:e.data.revision,revision:e.data.revision});
+      }else throw e;
+     }
+    }else{
+     const j=await api('/api/bootstrap');
+     if(j.state&&j.revision>=Number(d.conflictRevision||d.revision||0)){
+      const remote=JSON.parse(j.state),m=M.merge(d.base,d.local,remote);
+      if(!m.conflicts.length){persist({...d,local:m.state,base:remote,revision:j.revision,pending:null,conflicts:[],conflictRemote:null,conflictRevision:0});apply();}
+      else persist({...d,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:j.revision,revision:j.revision});
+     }
     }
     return;
    }
@@ -125,7 +140,7 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- // 2.89: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
+ // 2.90: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
  // synchronisiert; zusätzlich gibt es nur einen sparsamen Abgleich alle 60 Sekunden.
  setInterval(sync,60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();
