@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='anlagenbuch-shell-2.87',MEDIA='anlagenbuch-media-2.87';
-const CORE=['/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
+const CACHE='anlagenbuch-shell-2.88',MEDIA='anlagenbuch-media-2.88';
+const CORE=['/','/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
 
 async function shellCaches(){
  return (await caches.keys()).filter(k=>k.startsWith('anlagenbuch-shell-'));
@@ -11,7 +11,7 @@ async function currentMatch(path,req){
 }
 self.addEventListener('install',e=>e.waitUntil((async()=>{
  const c=await caches.open(CACHE);
- // 2.87: Nur statische Shell-Dateien vorladen; der Navigationspfad / wird bewusst nicht vorab angefordert.
+ // 2.86: Nur aktivieren, wenn die komplette neue Shell wirklich geladen wurde.
  // Damit kann keine halbe neue Version mit JavaScript einer alten Version entstehen.
  await Promise.all(CORE.map(async u=>{
   const r=await fetch(u,{cache:'no-store'});
@@ -23,11 +23,11 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
  for(const k of await shellCaches())if(k!==CACHE)await caches.delete(k);
  await self.clients.claim();
- const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.87'});
+ const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.88'});
 })()));
 async function nav(req){
  const c=await caches.open(CACHE);
- // 2.87: Die Bedienoberfläche darf niemals durch eine Backend-/Quota-Antwort ersetzt werden.
+ // 2.88: Die Bedienoberfläche darf niemals durch eine Backend-/Quota-Antwort ersetzt werden.
  // Zuerst vorhandene lokale Shell verwenden; parallel nur echte HTML-Antworten aktualisieren.
  const cached=(await c.match('/index.html',{ignoreSearch:true}))||(await currentMatch('/index.html',req));
  try{

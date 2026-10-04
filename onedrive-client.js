@@ -1,10 +1,13 @@
 'use strict';
 (()=>{
  const key='anlagenbuch-onedrive-v2',legacyKey='anlagenbuch-onedrive-v1',M=SyncMerge,S=OfflineStore,boot=window.__WEB_BOOTSTRAP__||{};
- let d=M.unpack(localStorage.getItem(key)||localStorage.getItem(legacyKey))||{base:S.getBaseRaw()?JSON.parse(S.getBaseRaw()):null,local:S.getStateRaw()?JSON.parse(S.getStateRaw()):null,revision:0,pending:null,conflicts:[]};
+ let d=M.unpack(window.__OD_LOCAL_PACKED||'')||{base:null,local:null,revision:0,pending:null,conflicts:[]};
+ let syncDbPromise=null,writeChain=Promise.resolve();
+ function syncDb(){return syncDbPromise||(syncDbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-sync',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('state'))r.result.createObjectStore('state');};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);}));}
+ function storePacked(packed){writeChain=writeChain.then(async()=>{const b=await syncDb();await new Promise((resolve,reject)=>{const t=b.transaction('state','readwrite');t.objectStore('state').put(packed,'onedrive-v2');t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}).catch(e=>{error='Lokaler IndexedDB-Speicherfehler: '+e.message;emit();});return writeChain;}
  // 2.85: Alte parallele Web-Speicher werden nach erfolgreicher Übernahme entfernt.
  // Der OneDrive-Sync ist damit die einzige lokale Arbeitskopie/Sync-Quelle.
- function cleanupLegacy(){try{if(d.local){localStorage.removeItem(legacyKey);localStorage.removeItem('anlagenbuch-v1');for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('anlagenbuch-web-v230-'))localStorage.removeItem(k);}}}catch(_){}}
+ function cleanupLegacy(){try{if(d.local){localStorage.removeItem(key);localStorage.removeItem(legacyKey);localStorage.removeItem('anlagenbuch-v1');for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('anlagenbuch-web-v230-'))localStorage.removeItem(k);}}}catch(_){}}
  // 2.85: Den beim Start frisch gelesenen Zentralstand sofort einbeziehen.
  // Bei vorhandener Basis bleiben lokale Offline-Änderungen erhalten und werden gemergt.
  if(boot.state){
@@ -15,18 +18,13 @@
    if(start.conflicts.length)d={...d,pending:null,conflicts:start.conflicts,conflictRemote:remote,conflictRevision:boot.revision||0};
    else d={...d,local:start.state,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:[]};
   }else if(M.same(d.local,remote)){d={...d,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:[]};}
-  localStorage.setItem(key,M.pack(d));
+  storePacked(M.pack(d));
  }
  cleanupLegacy();
  let busy=false,error='',waitUntil=0,retryMs=2000,applying=false,syncAgain=false;
  const emit=()=>window.cloudChanged?.();
  function persist(next){
-  const packed=M.pack(next);
-  try{localStorage.setItem(key,packed);d=next;return;}catch(e){
-   // Alte doppelte Zustände waren die Hauptursache für QuotaExceeded. Erst aufräumen, dann erneut schreiben.
-   cleanupLegacy();
-   try{localStorage.setItem(key,packed);d=next;return;}catch(e2){throw Error('Lokaler Schutzspeicher ist voll. Änderungen bleiben in dieser Sitzung erhalten; bitte keine Browserdaten löschen.');}
-  }
+  const packed=M.pack(next);d=next;storePacked(packed);
  }
  function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');}finally{applying=false;}}
  const dirty=()=>!M.same(d.base,d.local);
@@ -127,7 +125,7 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- // 2.87: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
+ // 2.88: Kein Dauer-Polling im 2-Sekunden-Takt mehr. Lokale Änderungen werden sofort
  // synchronisiert; zusätzlich gibt es nur einen sparsamen Abgleich alle 60 Sekunden.
  setInterval(sync,60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();
