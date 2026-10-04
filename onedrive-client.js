@@ -143,7 +143,19 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- // 2.93: Automatischer OneDrive-Abgleich ohne F5. Sichtbare Seiten pruefen alle 8 s,
+ // 2.94: Automatischer OneDrive-Abgleich ohne F5. Sichtbare Seiten pruefen alle 8 s,
  // Hintergrund-Tabs sparsamer alle 60 s. Fokus, Rueckkehr und Online-Wechsel gleichen sofort ab.
- setInterval(()=>{if(document.hidden)return;sync();},8000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
+ let revisionWatchBusy=false,revisionWatchSeen=Number(d.revision||0);
+ async function revisionWatch(){
+  if(revisionWatchBusy||document.hidden||navigator.onLine===false)return;revisionWatchBusy=true;
+  try{
+   const r=await fetch('/api/health',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
+   if(!r.ok)return;const j=await r.json(),remote=Number(j.revision||0),local=Number(d.revision||0);
+   if(remote>local){
+    revisionWatchSeen=Math.max(revisionWatchSeen,remote);sync();
+    setTimeout(()=>{if(!document.hidden&&navigator.onLine!==false&&Number(d.revision||0)<revisionWatchSeen)location.reload();},2500);
+   }
+  }catch(_){}finally{revisionWatchBusy=false;}
+ }
+ setInterval(()=>{if(document.hidden)return;sync();revisionWatch();},8000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();
