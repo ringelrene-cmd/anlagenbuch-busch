@@ -1,8 +1,11 @@
 'use strict';
 (()=>{
- const key='anlagenbuch-onedrive-v1',M=SyncMerge,S=OfflineStore,boot=window.__WEB_BOOTSTRAP__||{};
- let d=M.unpack(localStorage.getItem(key))||{base:S.getBaseRaw()?JSON.parse(S.getBaseRaw()):null,local:S.getStateRaw()?JSON.parse(S.getStateRaw()):null,revision:0,pending:null,conflicts:[]};
- // 2.84: Den beim Start frisch gelesenen Zentralstand sofort einbeziehen.
+ const key='anlagenbuch-onedrive-v2',legacyKey='anlagenbuch-onedrive-v1',M=SyncMerge,S=OfflineStore,boot=window.__WEB_BOOTSTRAP__||{};
+ let d=M.unpack(localStorage.getItem(key)||localStorage.getItem(legacyKey))||{base:S.getBaseRaw()?JSON.parse(S.getBaseRaw()):null,local:S.getStateRaw()?JSON.parse(S.getStateRaw()):null,revision:0,pending:null,conflicts:[]};
+ // 2.85: Alte parallele Web-Speicher werden nach erfolgreicher Übernahme entfernt.
+ // Der OneDrive-Sync ist damit die einzige lokale Arbeitskopie/Sync-Quelle.
+ function cleanupLegacy(){try{if(d.local){localStorage.removeItem(legacyKey);localStorage.removeItem('anlagenbuch-v1');for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('anlagenbuch-web-v230-'))localStorage.removeItem(k);}}}catch(_){}}
+ // 2.85: Den beim Start frisch gelesenen Zentralstand sofort einbeziehen.
  // Bei vorhandener Basis bleiben lokale Offline-Änderungen erhalten und werden gemergt.
  if(boot.state){
   const remote=JSON.parse(boot.state);
@@ -14,15 +17,23 @@
   }else if(M.same(d.local,remote)){d={...d,base:M.copy(remote),revision:boot.revision||0,pending:null,conflicts:[]};}
   localStorage.setItem(key,M.pack(d));
  }
- let busy=false,error='',waitUntil=0,applying=false,syncAgain=false;
+ cleanupLegacy();
+ let busy=false,error='',waitUntil=0,retryMs=2000,applying=false,syncAgain=false;
  const emit=()=>window.cloudChanged?.();
- function persist(next){localStorage.setItem(key,M.pack(next));d=next;}
+ function persist(next){
+  const packed=M.pack(next);
+  try{localStorage.setItem(key,packed);d=next;return;}catch(e){
+   // Alte doppelte Zustände waren die Hauptursache für QuotaExceeded. Erst aufräumen, dann erneut schreiben.
+   cleanupLegacy();
+   try{localStorage.setItem(key,packed);d=next;return;}catch(e2){throw Error('Lokaler Schutzspeicher ist voll. Änderungen bleiben in dieser Sitzung erhalten; bitte keine Browserdaten löschen.');}
+  }
+ }
  function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');}finally{applying=false;}}
  const dirty=()=>!M.same(d.base,d.local);
  async function api(path,opt={}){
   if(navigator.onLine===false)throw Error('Offline – Änderungen bleiben auf diesem Gerät.');
   const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...opt,signal:AbortSignal.timeout(60000)}),j=await r.json();
-  if(!r.ok){if(r.status===429||r.status===503)waitUntil=Date.now()+Math.max(30,Number(r.headers.get('Retry-After'))||30)*1000;throw Object.assign(Error(j.error||'Serverfehler'),{status:r.status,data:j});}return j;
+  if(!r.ok){if(r.status===429||r.status===503){const ra=Number(r.headers.get('Retry-After'));retryMs=Math.min(60000,Math.max(2000,ra?ra*1000:retryMs*2));waitUntil=Date.now()+retryMs;}throw Object.assign(Error(j.error||'Serverfehler'),{status:r.status,data:j});}retryMs=2000;waitUntil=0;return j;
  }
  function accept(remote,revision,base){
   const m=M.merge(base,d.local,remote);
@@ -52,7 +63,7 @@
     const pending=d.pending,j=await api('/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});
     accept(j.state,j.revision,pending.local);
    }
-   // 2.84: Nach jedem Upload (und auch ohne lokale Änderung) noch einmal den
+   // 2.85: Nach jedem Upload (und auch ohne lokale Änderung) noch einmal den
    // aktuellen zentralen Stand holen. So sehen alle Online-Geräte denselben Stand,
    // auch wenn ein Kollege während unseres Uploads bereits weitergearbeitet hat.
    if(!d.conflicts){
@@ -65,7 +76,7 @@
    if(syncAgain&&navigator.onLine!==false)setTimeout(sync,0);
   }
  }
- function save(raw){if(applying)return true;try{persist({...d,local:JSON.parse(raw)});setTimeout(sync,450);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
+ function save(raw){if(applying)return true;try{const local=JSON.parse(raw);persist({...d,local});setTimeout(sync,0);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
  async function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-backup',1);r.onupgradeneeded=()=>r.result.createObjectStore('backup');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
  async function backupStore(value){const b=await db();try{return await new Promise((resolve,reject)=>{const t=b.transaction('backup',value?'readwrite':'readonly'),s=t.objectStore('backup'),r=value?s.put(value,'latest'):s.get('latest');t.oncomplete=()=>resolve(value||r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}finally{b.close();}}
  function refs(s){const set=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))set.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);return [...set];}
@@ -86,7 +97,7 @@
   if(!backup)throw Error('Noch kein Backup vorhanden.');
   const next=AppCore.validate(backup.state);
   if(!confirm('Backup vom '+new Date(backup.at).toLocaleString('de-DE')+' wiederherstellen? Änderungen seit diesem Backup werden als bewusste Änderungen zum Abgleich vorgemerkt.'))return;
-  const cache=await caches.open('anlagenbuch-media-2.84');for(const [uri,encoded] of Object.entries(backup.media||{})){const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));await cache.put(mediaUrl(uri),new Response(bytes,{headers:{'Content-Type':uri.includes('pdf:')?'application/pdf':'image/jpeg'}}));}
+  const cache=await caches.open('anlagenbuch-media-2.85');for(const [uri,encoded] of Object.entries(backup.media||{})){const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));await cache.put(mediaUrl(uri),new Response(bytes,{headers:{'Content-Type':uri.includes('pdf:')?'application/pdf':'image/jpeg'}}));}
   await backupStore({backup,pending:false});persist({...d,restorePending:true});if(!save(JSON.stringify(next)))throw Error(error);apply();window.toast?.('Backup wiederhergestellt. Abgleich vorgemerkt.');
  }catch(e){window.nativeMessage?.(e.message);}}
  function resolveConflicts(choices,displayed){
@@ -101,7 +112,7 @@
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
- async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.84');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
+ async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.85');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
  window.Native={load:()=>d.local?JSON.stringify(d.local):'',seed:()=>window.SEED_TEXT||'',save,
   makeBackup:raw=>save(raw),backupStatus:()=>JSON.stringify(OneDriveSync.status()),retryCloud:()=>{sync();uploadBackup();return true;},
   queueFaultSync:()=>true,queueFaultSyncBatch:()=>true,queueWorkSync:()=>true,queueWorkSyncBatch:()=>true,syncFaults:()=>{sync();return true;},syncWork:()=>{sync();return true;},resetFaultSyncForRestore:()=>true,resetWorkSyncForRestore:()=>true,
@@ -116,5 +127,5 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- setInterval(sync,5000);setInterval(uploadBackup,30000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
+ setInterval(sync,2000);setInterval(uploadBackup,30000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',sync);window.addEventListener('pageshow',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(sync,300);
 })();

@@ -1,6 +1,6 @@
 'use strict';
 window.migrateLocalOneDrive=async()=>{
- const key='anlagenbuch-onedrive-v1';if(localStorage.getItem(key))return;
+ const key='anlagenbuch-onedrive-v2',old='anlagenbuch-onedrive-v1';if(localStorage.getItem(key))return;if(localStorage.getItem(old)){localStorage.setItem(key,localStorage.getItem(old));localStorage.removeItem(old);return;}
  const prefix='anlagenbuch-web-v230-',entries={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(prefix)||k==='anlagenbuch-v1')entries[k]=localStorage.getItem(k);}
  const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-migration',1);r.onupgradeneeded=()=>r.result.createObjectStore('original');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
  const transaction=(value)=>new Promise((resolve,reject)=>{const t=db.transaction('original',value?'readwrite':'readonly'),s=t.objectStore('original'),r=value?s.put(value,'pre-onedrive'):s.get('pre-onedrive');t.oncomplete=()=>resolve(value||r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});
