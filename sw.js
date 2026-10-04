@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='anlagenbuch-shell-2.86',MEDIA='anlagenbuch-media-2.86';
-const CORE=['/','/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
+const CACHE='anlagenbuch-shell-2.87',MEDIA='anlagenbuch-media-2.87';
+const CORE=['/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
 
 async function shellCaches(){
  return (await caches.keys()).filter(k=>k.startsWith('anlagenbuch-shell-'));
@@ -11,7 +11,7 @@ async function currentMatch(path,req){
 }
 self.addEventListener('install',e=>e.waitUntil((async()=>{
  const c=await caches.open(CACHE);
- // 2.86: Nur aktivieren, wenn die komplette neue Shell wirklich geladen wurde.
+ // 2.87: Nur statische Shell-Dateien vorladen; der Navigationspfad / wird bewusst nicht vorab angefordert.
  // Damit kann keine halbe neue Version mit JavaScript einer alten Version entstehen.
  await Promise.all(CORE.map(async u=>{
   const r=await fetch(u,{cache:'no-store'});
@@ -23,20 +23,25 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
  for(const k of await shellCaches())if(k!==CACHE)await caches.delete(k);
  await self.clients.claim();
- const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.86'});
+ const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.87'});
 })()));
 async function nav(req){
  const c=await caches.open(CACHE);
+ // 2.87: Die Bedienoberfläche darf niemals durch eine Backend-/Quota-Antwort ersetzt werden.
+ // Zuerst vorhandene lokale Shell verwenden; parallel nur echte HTML-Antworten aktualisieren.
+ const cached=(await c.match('/index.html',{ignoreSearch:true}))||(await currentMatch('/index.html',req));
  try{
   const ac=new AbortController(),t=setTimeout(()=>ac.abort(),3500);
-  const r=await fetch(req,{signal:ac.signal,cache:'no-store'});clearTimeout(t);
-  if(r&&r.ok){if(new URL(r.url).origin===location.origin&&!r.url.includes('/login'))await c.put('/index.html',r.clone());return r;}
-  const hit=await currentMatch('/index.html',req);if(hit)return hit;
-  return r;
- }catch(_){
-  const hit=await currentMatch('/index.html',req);if(hit)return hit;
-  return new Response('Anlagenbuch ist offline noch nicht vollständig gespeichert.',{status:503,headers:{'Content-Type':'text/plain;charset=utf-8'}});
- }
+  const r=await fetch('/index.html',{signal:ac.signal,cache:'no-store',headers:{'Accept':'text/html'}});clearTimeout(t);
+  const ct=(r.headers.get('content-type')||'').toLowerCase();
+  if(r&&r.ok&&ct.includes('text/html')){
+   await c.put('/index.html',r.clone());
+   return r;
+  }
+  // 429/5xx/Quota-Text nie als App-Seite anzeigen.
+  if(cached)return cached;
+ }catch(_){if(cached)return cached;}
+ return new Response('<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anlagenbuch</title><body style="font-family:sans-serif;background:#122f35;color:white;padding:2rem"><h1>Anlagenbuch</h1><p>Die Online-Verbindung ist momentan nicht verfügbar. Bitte die App erneut öffnen, sobald die statische Oberfläche erreichbar ist. Lokale Daten wurden nicht gelöscht.</p></body></html>',{status:200,headers:{'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store'}});
 }
 async function staticAsset(req,u){
  const c=await caches.open(CACHE),dynamic=/\.(?:js|css|webmanifest)$/i.test(u.pathname);
