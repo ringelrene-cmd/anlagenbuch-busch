@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='anlagenbuch-shell-2.96',MEDIA='anlagenbuch-media-2.96';
-const CORE=['/repair-bootstrap.js','/','/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
+const CACHE='anlagenbuch-shell-2.97',MEDIA='anlagenbuch-media-2.97';
+const CORE=['/repair-bootstrap.js','/app.html','/','/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js','/sync-merge.js','/migrate-local.js','/onedrive-client.js','/onedrive-ui.js','/web-pdf-offline-249.js','/vendor/pdfjs/pdf.js','/vendor/pdfjs/pdf.worker.js','/global-sync-247.js','/app-249.js','/web-ui-249.js','/pump-serial-data-247.js','/pump-serial-migration-247.js','/default-psa-migration-242.js','/seed-preview.js','/btf-data.js','/module1-data.js','/annex-data.js','/pump-unit-data.js','/core.js','/equipment.js','/units-248.js','/qrcode-runtime.js','/batch-search.js','/pool-links.js','/handling-multi-249.js','/help-data.js','/help-image-viewer.js','/help.js','/widget.js','/settings-menu.js','/style.css','/equipment.css','/settings-menu.css','/web.css','/manifest.webmanifest','/busch-icon-192-v220.png','/busch-icon-512-v220.png','/busch-favicon-v220.ico','/busch-logo.png','/icon-192.png','/icon-512.png','/stoerungssirene.mp3','/siren.wav','/data.txt','/lageplan-gelaende.jpeg','/modul1-original.jpeg','/modul2-original.jpeg','/annex-original.jpeg','/psa/M001.jpg','/psa/M003.jpg','/psa/M004.jpg','/psa/M008.jpg','/psa/M009.jpg','/psa/M010.jpg','/psa/M011.jpg','/psa/M012.jpg','/psa/M013.jpg','/psa/M014.jpg','/psa/M015.jpg','/psa/M017.jpg','/psa/M018.jpg','/psa/M020.jpg','/psa/M021.jpg','/psa/M022.jpg','/psa/M023.jpg','/psa/M024.jpg','/psa/M026.jpg','/psa/WSM001.jpg'];
 
 async function shellCaches(){
  return (await caches.keys()).filter(k=>k.startsWith('anlagenbuch-shell-'));
@@ -13,12 +13,12 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
  const c=await caches.open(CACHE);
  // 2.96 Selbstreparatur: Ein einzelnes optionales Asset darf ein Update nicht mehr blockieren.
  // Die Startdateien muessen vorhanden sein; der Rest wird best-effort vorgeladen.
- for(const u of ['/index.html','/repair-bootstrap.js','/offline-store-235.js','/web-bootstrap-onedrive.js']){
+ for(const u of ['/app.html','/index.html','/repair-bootstrap.js','/offline-store-235.js','/web-bootstrap-onedrive.js']){
   const r=await fetch(u,{cache:'no-store'});
   if(!r||!r.ok)throw Error('Startdatei fehlt: '+u);
   await c.put(u,r.clone());
  }
- await Promise.allSettled(CORE.filter(u=>!['/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js'].includes(u)).map(async u=>{
+ await Promise.allSettled(CORE.filter(u=>!['/app.html','/index.html','/offline-store-235.js','/web-bootstrap-onedrive.js'].includes(u)).map(async u=>{
   const r=await fetch(u,{cache:'no-store'});if(r&&r.ok)await c.put(u,r.clone());
  }));
  await self.skipWaiting();
@@ -26,7 +26,7 @@ self.addEventListener('install',e=>e.waitUntil((async()=>{
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
  for(const k of await shellCaches())if(k!==CACHE)await caches.delete(k);
  await self.clients.claim();
- const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.96'});
+ const rows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const c of rows)c.postMessage({type:'anlagenbuch-version',version:'2.97'});
 })()));
 async function nav(req){
  const c=await caches.open(CACHE);
@@ -68,10 +68,11 @@ async function media(req){
 }
 self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;const u=new URL(req.url);if(u.origin!==location.origin)return;
  if(req.mode==='navigate'&&(u.pathname==='/'||u.pathname==='/index.html')){e.respondWith(nav(req));return;}
+ if(req.mode==='navigate'&&u.pathname==='/app.html'){e.respondWith(staticAsset(req,u));return;}
  if(u.pathname==='/api/media'){e.respondWith(media(req));return;}
  if(u.pathname.startsWith('/api/')||u.pathname==='/login.html'||u.pathname==='/login.js'){return;}
  e.respondWith(staticAsset(req,u));
 });
-self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(rows=>{for(const c of rows){if('focus'in c)return c.focus();}return clients.openWindow('/');}));});
-self.addEventListener('message',e=>{const d=e.data||{};if(d.type==='activate-now'){e.waitUntil(self.skipWaiting());return;}if(d.type==='fault-notification'){e.waitUntil(self.registration.showNotification(d.title||'Neue Störung',{body:d.body||'Neue Störung im Anlagenbuch',icon:'/busch-icon-192-v220.png',badge:'/busch-icon-192-v220.png',tag:d.tag||'anlagenbuch-fault',renotify:true,requireInteraction:true,data:{url:'/'}}));}});
+self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(rows=>{for(const c of rows){if('focus'in c)return c.focus();}return clients.openWindow('/app.html?v=2.97');}));});
+self.addEventListener('message',e=>{const d=e.data||{};if(d.type==='activate-now'){e.waitUntil(self.skipWaiting());return;}if(d.type==='fault-notification'){e.waitUntil(self.registration.showNotification(d.title||'Neue Störung',{body:d.body||'Neue Störung im Anlagenbuch',icon:'/busch-icon-192-v220.png',badge:'/busch-icon-192-v220.png',tag:d.tag||'anlagenbuch-fault',renotify:true,requireInteraction:true,data:{url:'/app.html?v=2.97'}}));}});
 

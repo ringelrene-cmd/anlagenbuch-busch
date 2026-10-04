@@ -1,7 +1,7 @@
 (async()=>{
  'use strict';
  if(!('serviceWorker' in navigator)||!('caches' in window))return;
- const VERSION='2.96', FLAG='anlagenbuch-repair-'+VERSION;
+ const VERSION='2.97', FLAG='anlagenbuch-repair-'+VERSION;
  try{
   // Alte App-Shells entfernen. Medien-/Offline-Daten und IndexedDB bleiben erhalten.
   const names=await caches.keys();
