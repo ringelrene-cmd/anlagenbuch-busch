@@ -61,7 +61,7 @@
       }else throw e;
      }
     }else{
-     // 2.95: Auch bei alten, noch nicht aufgeloesten Konflikten den Zentralstand
+     // 2.96: Auch bei alten, noch nicht aufgeloesten Konflikten den Zentralstand
      // regelmaessig einlesen. Neue konfliktfreie Team-Aenderungen werden sofort
      // in die sichtbare Arbeitskopie uebernommen; die alten Konflikte bleiben offen.
      const j=await api('/api/bootstrap');
@@ -143,7 +143,7 @@
  window.webMediaUrl=mediaUrl;window.__webBridgeOwnsSnapshotSync=true;
  window.FaultAlerts={notifyNewFaults:raw=>{const rows=JSON.parse(raw||'[]');if(rows.length){Native.testFaultSiren();const x=rows.at(-1);navigator.serviceWorker?.controller?.postMessage({type:'fault-notification',title:'Neue Störung · '+x.asset.name,body:x.fault.description,tag:x.fault.id});}return true;}};
  window.WidgetBridge={update:()=>true,pin:()=>window.toast?.('Das Android-Widget wird über die Begleit-App eingerichtet.')};
- // 2.95: Automatischer OneDrive-Abgleich ohne F5. Sichtbare Seiten pruefen alle 8 s,
+ // 2.96: Automatischer OneDrive-Abgleich ohne F5. Sichtbare Seiten pruefen alle 8 s,
  // Hintergrund-Tabs sparsamer alle 60 s. Fokus, Rueckkehr und Online-Wechsel gleichen sofort ab.
  let revisionWatchBusy=false,revisionWatchSeen=Number(d.revision||0);
  async function revisionWatch(){
@@ -157,7 +157,7 @@
    }
   }catch(_){}finally{revisionWatchBusy=false;}
  }
- // 2.95: visible clients actively verify the central OneDrive revision. This is intentionally
+ // 2.96: visible clients actively verify the central OneDrive revision. This is intentionally
  // independent of the normal merge timer so an already-open PC cannot remain on a stale UI.
  async function livePull(){
   if(document.hidden||navigator.onLine===false)return;

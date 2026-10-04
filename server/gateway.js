@@ -13,7 +13,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 export async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'2.95',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'2.96',provider:'onedrive'});
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
