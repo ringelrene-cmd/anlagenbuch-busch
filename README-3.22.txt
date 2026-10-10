@@ -1,0 +1,1 @@
+Version 3.22: Korrektur des Offline-Aktivierungsvorgangs. Auf das vollständige Nachspeichern des Programms wird im activate-Ereignis gewartet. Keine Datenlöschung und keine Änderung der Begleiter. Der Offline-Start auf Android ist ohne Gerätetest noch nicht verifiziert.

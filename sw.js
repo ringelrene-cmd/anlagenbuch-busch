@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='3.21';
+const VERSION='3.22';
 const CACHE='anlagenbuch-shell-'+VERSION;
 const ESSENTIAL=[
  '/index.html','/app.html','/login.html',
@@ -47,8 +47,9 @@ self.addEventListener('install',event=>event.waitUntil((async()=>{
 })()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
  await self.clients.claim();
- // Warm up after activating; no failure in a media file can break the offline navigation.
- warmup().catch(()=>{});
+ // Keep activation alive while the complete program shell is being saved.
+ // Otherwise Android may terminate the worker before lazy script downloads finish.
+ await warmup();
 })()));
 self.addEventListener('fetch',event=>{
  const req=event.request;
