@@ -4,7 +4,7 @@
  async function repairWorker(){
   if(!('serviceWorker' in navigator))return;
   try{
-   const reg=await navigator.serviceWorker.register('/sw.js?v=3.03',{scope:'/',updateViaCache:'none'});
+   const reg=await navigator.serviceWorker.register('/sw.js?v=3.05',{scope:'/',updateViaCache:'none'});
    if(reg.waiting)reg.waiting.postMessage({type:'activate-now'});
    const deadline=Date.now()+5000;
    while(Date.now()<deadline){
@@ -23,7 +23,7 @@
    if(!r.ok||!j?.ok)throw Error(j?.error||('Anmeldung fehlgeschlagen ('+r.status+').'));
    e.textContent='Anlagenbuch wird vorbereitet …';
    await repairWorker();
-   location.replace('/index.html?v=3.03&start='+Date.now());
+   location.replace('/index.html?v=3.05&start='+Date.now());
   }catch(err){e.textContent=err.message;}
  };
 })();
