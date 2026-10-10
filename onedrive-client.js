@@ -23,8 +23,20 @@
  cleanupLegacy();
  let busy=false,error='',waitUntil=0,retryMs=2000,applying=false,syncAgain=false;
  const emit=()=>window.cloudChanged?.();
+ let mediaPrefetchTimer=null;
+ function primeOfflineMedia(){
+  if(navigator.onLine===false||!d.local||!('serviceWorker' in navigator))return;
+  clearTimeout(mediaPrefetchTimer);
+  mediaPrefetchTimer=setTimeout(()=>{
+   const uris=refs(d.local);
+   if(!uris.length)return;
+   navigator.serviceWorker.ready.then(reg=>{
+    (navigator.serviceWorker.controller||reg.active)?.postMessage({type:'offline-media-prefetch',uris});
+   }).catch(()=>{});
+  },1500);
+ }
  function persist(next){
-  const packed=M.pack(next);d=next;storePacked(packed);
+  const packed=M.pack(next);d=next;storePacked(packed);primeOfflineMedia();
  }
  function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');window.dispatchEvent(new CustomEvent('anlagenbuch:remote-applied',{detail:{revision:Number(d.revision||0)}}));}finally{applying=false;}}
  const dirty=()=>!M.same(d.base,d.local);
@@ -175,5 +187,5 @@
    }
   }catch(_){}
  }
- setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();},300);
+ setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();primeOfflineMedia();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();primeOfflineMedia();},300);
 })();
