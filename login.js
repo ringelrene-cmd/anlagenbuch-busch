@@ -4,7 +4,7 @@
  async function repairWorker(){
   if(!('serviceWorker' in navigator))return;
   try{
-   const reg=await navigator.serviceWorker.register('/sw.js?v=2.98',{scope:'/',updateViaCache:'none'});
+   const reg=await navigator.serviceWorker.register('/sw.js?v=3.01',{scope:'/',updateViaCache:'none'});
    if(reg.waiting)reg.waiting.postMessage({type:'activate-now'});
    const deadline=Date.now()+5000;
    while(Date.now()<deadline){
@@ -26,5 +26,4 @@
    location.replace('/index.html?v=3.00&start='+Date.now());
   }catch(err){e.textContent=err.message;}
  };
- repairWorker();
 })();

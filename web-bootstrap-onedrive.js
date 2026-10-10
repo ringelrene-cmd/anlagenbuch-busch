@@ -1,6 +1,8 @@
 'use strict';
 (async()=>{
  const loading=document.getElementById('webLoading');
+ // Register even for authenticated sessions which bypass the login screen.
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js?v=3.01',{scope:'/',updateViaCache:'none'}).catch(console.warn);
  try{
   if(!navigator.locks)throw Error('Bitte einen aktuellen Browser über HTTPS verwenden.');
   let release;const held=new Promise(r=>release=r);

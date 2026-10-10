@@ -1,10 +1,6 @@
 (async()=>{
  'use strict';
- if(!('serviceWorker' in navigator)||!('caches' in window))return;
- try{
-  const names=await caches.keys();
-  await Promise.all(names.filter(n=>n.startsWith('anlagenbuch-shell-')).map(n=>caches.delete(n)));
-  const reg=await navigator.serviceWorker.register('/sw.js?v=2.98',{scope:'/',updateViaCache:'none'});
-  if(reg.waiting)reg.waiting.postMessage({type:'activate-now'});
- }catch(e){console.warn('Anlagenbuch-Startschutz:',e);}
+ if(!('serviceWorker'in navigator))return;
+ try{await navigator.serviceWorker.register('/sw.js?v=3.01',{scope:'/',updateViaCache:'none'});}
+ catch(e){console.warn('Offline-App konnte nicht vorbereitet werden:',e);}
 })();

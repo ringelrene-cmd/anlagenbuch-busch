@@ -2,7 +2,7 @@
 (()=>{
  document.title='Anlagenbuch Web · Busch Group';
 
- if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.00'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.00');}catch(_){}}});}
+ if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.01'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.00');}catch(_){}}});}
  const footer=document.querySelector('footer small');if(footer)footer.textContent='Anlagenbuch Web 3.00 · Offline-Arbeit mit lokalem Schutzspeicher · automatischer OneDrive-Abgleich';
  const actions=document.querySelector('footer .actions');if(actions){const b=document.createElement('button');b.className='light';b.textContent='Abmelden / Sitzung beenden';b.onclick=async()=>{try{await fetch('/api/logout',{method:'POST',credentials:'same-origin',cache:'no-store'});}finally{location.replace('/login.html');}};actions.appendChild(b);}
  const oldSite=window.sitePlanPanel;if(typeof oldSite==='function')window.sitePlanPanel=()=>{oldSite();for(const img of document.querySelectorAll('img')){const src=img.getAttribute('src')||'';if(/^(app-image|web-image):/.test(src))img.src=window.webMediaUrl(src);}};
