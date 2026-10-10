@@ -1,6 +1,6 @@
-Anlagenbuch Web 3.08 – Begleiter-Updates
+Anlagenbuch Web 3.09 – Begleiter-Updates
 
-Unter den drei Punkten stehen Web-Version 3.08 und der Punkt Begleit-App installieren.
+Unter den drei Punkten stehen Web-Version 3.09 und der Punkt Begleit-App installieren.
 Android-Begleiter: signierte APK 2.32.
 Windows-Begleiter: Installations-EXE 2.21 mit repariertem Start-Begleiter.vbs.
 Updates prüfen öffnet ebenfalls den Download-Dialog.
@@ -8,5 +8,5 @@ Android: APK herunterladen, dann Installation am Gerät bestätigen.
 Windows: EXE herunterladen und durch Doppelklick installieren. Entpacken ist nicht nötig.
 Hinweis: EXE nicht digital mit einem Herausgeberzertifikat signiert; Windows SmartScreen kann nachfragen.
 Automatisches stilles Installieren über eine Browserseite ist nicht möglich.
-Offline- und Tagesgeschäft-Korrekturen aus 3.08 sind enthalten.
+Offline- und Tagesgeschäft-Korrekturen aus 3.09 sind enthalten.
 Vor Deployment Datensicherung erstellen.

@@ -1,4 +1,4 @@
-Anlagenbuch Web 3.08 – Statusabgleich der Begleiter
+Anlagenbuch Web 3.09 – Statusabgleich der Begleiter
 
 Fix: /api/companion/status zählt unter todayCount alle unerledigten Tagesgeschäfte bis einschließlich heute, nicht nur heute.
 Fix: Prioritätsanzeige im Browser berücksichtigt ebenfalls überfällige Einträge.

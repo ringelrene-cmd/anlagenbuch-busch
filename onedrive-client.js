@@ -82,7 +82,7 @@
    // 2.85: Nach jedem Upload (und auch ohne lokale Änderung) noch einmal den
    // aktuellen zentralen Stand holen. So sehen alle Online-Geräte denselben Stand,
    // auch wenn ein Kollege während unseres Uploads bereits weitergearbeitet hat.
-   if(!d.conflicts){
+   if(!d.conflicts.length){
     const j=await api('/api/bootstrap');
     if(j.state&&j.revision>=d.revision){const remote=JSON.parse(j.state);accept(remote,j.revision,d.base);}
    }

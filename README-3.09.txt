@@ -1,0 +1,1 @@
+3.09: Behebt die fehlerhafte Konfliktprüfung nach /api/sync (Array.length statt Array-Truthiness) und ergänzt im Web-Footer „Zählerabgleich prüfen“. Die Diagnose vergleicht lokale Kopie und OneDrive-Zentralstand ohne Änderungen. Bestehende Daten werden nicht überschrieben. Android 2.38 und Windows 2.26 bleiben unverändert.
