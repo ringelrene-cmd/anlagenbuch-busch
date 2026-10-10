@@ -1,4 +1,4 @@
-ANLAGENBUCH WEB 3.15 – WIDGET-ZAEHLER
+ANLAGENBUCH WEB 3.16 – WIDGET-ZAEHLER
 
 Die Werte für Störungen, In Bearbeitung und Tagesgeschäft stammen aus derselben zentralen state.json.
 Der neue _worker.js enthält die Cloudflare-Schnittstelle als ausführbare Datei.
