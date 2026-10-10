@@ -1,1 +1,1 @@
-3.09: Companion-Status zählt Tagesgeschaefte wie die Web-Tagesliste, ohne Filter auf assetId/unitId. Server liefert weiterhin Diagnose dailyBusinessTotal und dailyBusinessOpen. Wenn beide 0 sind, obwohl Web 12 zeigt, Server-/Browser-Datenstand vergleichen.
+3.10: Companion-Status zählt Tagesgeschaefte wie die Web-Tagesliste, ohne Filter auf assetId/unitId. Server liefert weiterhin Diagnose dailyBusinessTotal und dailyBusinessOpen. Wenn beide 0 sind, obwohl Web 12 zeigt, Server-/Browser-Datenstand vergleichen.

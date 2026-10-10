@@ -1,0 +1,1 @@
+Web 3.10: Korrektur des datumsbedingten Fehlers bei /api/companion/status. Serverdatum wird per Intl.formatToParts fest als YYYY-MM-DD erzeugt. Exakt die gleiche offene-Tagesgeschaeft-Zaehlung wie Web-App; Android- und Windows-Begleiter unveraendert. Zusaetzlicher Diagnosewert serverTodayDate.

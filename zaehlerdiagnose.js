@@ -1,4 +1,4 @@
-// 3.09: read-only comparison of the visible browser copy and OneDrive central copy.
+// 3.10: read-only comparison of the visible browser copy and OneDrive central copy.
 (()=>{
  const b=document.getElementById('compareCompanionStatus');if(!b)return;
  const rows=s=>Array.isArray(s?.dailyBusiness)?s.dailyBusiness:[];
@@ -8,7 +8,7 @@
   const old=b.textContent;b.disabled=true;b.textContent='Prüfe Datenstände …';
   try{
    const sync=window.OneDriveSync?.status?.()||{};
-   const local=JSON.parse(window.Native?.load?.()||'null');
+   const local=JSON.parse(window.Native?.load?.()||localStorage.getItem('anlagenbuch-v1')||'null');
    const localStats=calc(local);
    const response=await fetch('/api/bootstrap',{credentials:'same-origin',cache:'no-store'});
    if(!response.ok)throw Error('Server antwortet mit HTTP '+response.status);
