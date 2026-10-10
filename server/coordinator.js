@@ -42,7 +42,10 @@ export class Coordinator {
   if(path==='/api/companion/status'&&req.method==='GET'){
    const open=[],progress=[];for(const a of doc.state?.assets||[])for(const f of a.faults||[]){const row={id:f.id,assetId:a.id,assetName:a.name,description:f.description,reportedAt:f.reportedAt,unitName:f.unitBarcode||f.unitName||''};if(f.status==='open')open.push(row);if(f.status==='in_progress')progress.push(row);}
    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-   return response({ok:true,serverTime:Date.now(),revision:Number(doc.revision||0),openCount:open.length,progressCount:progress.length,todayCount:(doc.state?.dailyBusiness||[]).filter(r=>r&&typeof r.date==='string'&&r.date<=today&&!r.done).length,openFaultIds:open.map(x=>x.id),openFaults:open.slice(-20),latestAt:doc.at||0});
+   const allToday=Array.isArray(doc.state?.dailyBusiness)?doc.state.dailyBusiness:[];
+   // An die Tagesliste der Web-App angeglichen: auch unvollstaendige Datensaetze zaehlen als offen, sofern Datum und Status passen.
+   const activeToday=allToday.filter(r=>r&&typeof r.date==='string'&&r.date<=today&&!r.done);
+   return response({ok:true,serverTime:Date.now(),revision:Number(doc.revision||0),openCount:open.length,progressCount:progress.length,todayCount:activeToday.length,dailyBusinessTotal:allToday.length,dailyBusinessOpen:allToday.filter(r=>r&&!r.done).length,openFaultIds:open.map(x=>x.id),openFaults:open.slice(-20),latestAt:doc.at||0});
   }
   if(path==='/api/sync'&&req.method==='POST'){
    const body=await req.json();if(typeof body.id!=='string'||!/^[a-zA-Z0-9-]{1,100}$/.test(body.id))throw Error('Ungültige Vorgangs-ID.');
