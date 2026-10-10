@@ -47,7 +47,7 @@ export class Coordinator {
    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
    const today=`${parts.year}-${parts.month}-${parts.day}`;
    const allToday=Array.isArray(doc.state?.dailyBusiness)?doc.state.dailyBusiness:[];
-   const activeToday=allToday.filter(r=>r&&typeof r.date==='string'&&r.date<=today&&!r.done);
+   const activeToday=allToday.filter(r=>r&&!r.done); // Alle unerledigten Tagesgeschaefte bleiben bis zur Erledigung offen, unabhaengig vom Datum.
    return response({ok:true,serverTime:Date.now(),revision:Number(doc.revision||0),openCount:open.length,progressCount:progress.length,todayCount:activeToday.length,dailyBusinessTotal:allToday.length,dailyBusinessOpen:allToday.filter(r=>r&&!r.done).length,serverTodayDate:today,openFaultIds:open.map(x=>x.id),openFaults:open.slice(-20),latestAt:doc.at||0});
   }
   if(path==='/api/sync'&&req.method==='POST'){

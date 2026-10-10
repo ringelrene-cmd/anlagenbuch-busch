@@ -32,7 +32,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 export async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.10',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.11',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -51,7 +51,7 @@ export async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.10', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.11', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);
