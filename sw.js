@@ -1,6 +1,6 @@
 
 'use strict';
-const CACHE='anlagenbuch-shell-3.17';
+const CACHE='anlagenbuch-shell-3.18';
 const REQUIRED=["/annex-data.js", "/app-249.js", "/app.html", "/batch-search.js", "/btf-data.js", "/busch-icon-192-v220.png", "/busch-logo.png", "/core.js", "/default-psa-migration-242.js", "/equipment.css", "/equipment.js", "/global-sync-247.js", "/handling-multi-249.js", "/help-data.js", "/help-image-viewer.js", "/help.js", "/icon-192.png", "/index.html", "/login.html", "/login.js", "/manifest.webmanifest", "/migrate-local.js", "/module1-data.js", "/offline-store-235.js", "/onedrive-client.js", "/onedrive-ui.js", "/pc-widget.html", "/pool-links.js", "/pump-serial-data-247.js", "/pump-serial-migration-247.js", "/pump-unit-data.js", "/qrcode-runtime.js", "/repair-bootstrap.js", "/seed-preview.js", "/settings-menu.css", "/settings-menu.js", "/style.css", "/sw.js", "/sync-merge.js", "/units-248.js", "/vendor/jsQR.js", "/vendor/pdfjs/pdf.js", "/web-bootstrap-onedrive.js", "/web-pdf-offline-249.js", "/web-ui-249.js", "/web.css", "/widget.js", "/windows-hilfe.html"];
 const ROOT=['/','/index.html','/app.html','/login.html'];
 async function getCached(path){
