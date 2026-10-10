@@ -1,1 +1,14 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#122f35"><title>Anlagenbuch · Anmeldung</title><link rel="icon" href="/busch-favicon-v220.ico"><link rel="stylesheet" href="web.css"></head><body class="webLogin"><main class="webLoginCard"><img src="busch-logo.png" alt="Busch Vacuum Solutions"><h1>Anlagenbuch</h1><p>Geschützter Web-Zugang zum gemeinsamen Anlagenbuch.</p><form id="login"><label for="password">Web-Passwort</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">Anmelden</button><p id="error" class="webLoginError" role="alert"></p></form><p><small>Nach der ersten Anmeldung bleibt dieses Gerät angemeldet, bis du dich abmeldest oder die Browserdaten löschst.</small></p></main><script src="login.js"></script></body></html>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#122f35"><title>Anlagenbuch · Anmeldung</title><link rel="icon" href="/busch-favicon-v220.ico"><link rel="stylesheet" href="web.css"><script>(function(){
+ if(!('serviceWorker' in navigator) || !navigator.onLine) return;
+ const TARGET='3.13';
+ navigator.serviceWorker.addEventListener('controllerchange',function(){
+   const key='ab-sw-reload-'+TARGET;
+   if(sessionStorage.getItem(key)!=='done'){
+     sessionStorage.setItem(key,'done');
+     location.replace(location.pathname+'?v='+TARGET+'&updated='+Date.now());
+   }
+ });
+ navigator.serviceWorker.register('/sw.js?v='+TARGET,{scope:'/',updateViaCache:'none'})
+   .then(function(reg){if(reg.waiting)reg.waiting.postMessage({type:'activate-now'});return reg.update();})
+   .catch(function(e){console.warn('Updateprüfung',e)});
+})();</script></head><body class="webLogin"><main class="webLoginCard"><img src="busch-logo.png" alt="Busch Vacuum Solutions"><h1>Anlagenbuch</h1><p>Geschützter Web-Zugang zum gemeinsamen Anlagenbuch.</p><form id="login"><label for="password">Web-Passwort</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">Anmelden</button><p id="error" class="webLoginError" role="alert"></p></form><p><small>Nach der ersten Anmeldung bleibt dieses Gerät angemeldet, bis du dich abmeldest oder die Browserdaten löschst.</small></p></main><script src="login.js"></script></body></html>

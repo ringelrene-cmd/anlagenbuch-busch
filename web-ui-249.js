@@ -2,8 +2,8 @@
 (()=>{
  document.title='Anlagenbuch Web · Busch Group';
 
- if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.12'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.12');}catch(_){}}});}
- const footer=document.querySelector('footer small');if(footer)footer.textContent='Anlagenbuch Web 3.12 · Offline-Arbeit mit lokalem Schutzspeicher · automatischer OneDrive-Abgleich';
+ if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.13'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.13');}catch(_){}}});}
+ const footer=document.querySelector('footer small');if(footer)footer.textContent='Anlagenbuch Web 3.13 · Offline-Arbeit mit lokalem Schutzspeicher · automatischer OneDrive-Abgleich';
  // Users can connect their installed Windows helper without re-entering the web password.
  window.connectWindowsCompanion=async()=>{
   try{
