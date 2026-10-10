@@ -108,7 +108,7 @@ function faultBadgeHtml(a){const rows=activeFaults(a);if(!rows.length)return '';
 
 function todayOpenRows247(){
  const d=new Date(),date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
- return (Array.isArray(state&&state.dailyBusiness)?state.dailyBusiness:[]).filter(r=>r&&r.date===date&&!r.done&&r.assetId&&r.unitId);
+ return (Array.isArray(state&&state.dailyBusiness)?state.dailyBusiness:[]).filter(r=>r&&r.date<=date&&!r.done&&r.assetId&&r.unitId);
 }
 function todayAssetIds(){return new Set(todayOpenRows247().map(r=>r.assetId));}
 function priorityDesignation247(a,u){return ('V-VA-'+String(a&&a.name||'').trim()+' '+String(u&&u.name||'').trim()).trim();}

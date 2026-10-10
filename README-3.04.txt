@@ -1,4 +1,4 @@
-Anlagenbuch Web 3.05 (Testfassung)
+Anlagenbuch Web 3.06 (Testfassung)
 • Windows 2.22 EXE integriert; UTF-8-Umlaute korrigiert und sichere Geräteverbindung über die bereits angemeldete Web-App.
 • Android 2.33 Quellprojekt: Widget-Klick öffnet Browser (statt zweiter WebView), Gerätenutzung über 60-Sekunden-Verbindungscode. Keine zusätzlichen Passwortfelder.
 • Android 2.33 kann erst nach Kompilierung/Signatur installiert werden; Download in Web-App enthält weiterhin die bisherige signierte 2.32 und benennt sie klar.
