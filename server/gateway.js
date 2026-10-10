@@ -32,7 +32,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 export async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.13',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.15',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -51,7 +51,7 @@ export async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.13', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);
@@ -61,5 +61,32 @@ export async function gateway(req,env){
  if(!(companion?await companionAuthorized(req,env):await authorized(req,env)))return json({error:'Anmeldung erforderlich. Lokale Änderungen bleiben gespeichert.'},401);
  if(p==='/api/logout'&&req.method==='POST')return json({ok:true},200,{'Set-Cookie':'ab_session=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'});
  if(!env.SYNC)return json({error:'OneDrive-Koordinator noch nicht eingerichtet.'},503);
- return env.SYNC.get(env.SYNC.idFromName('anlagenbuch-main')).fetch(req);
+ const sync=env.SYNC.get(env.SYNC.idFromName('anlagenbuch-main'));
+ if(companion){
+  // Same central snapshot that the web client fetches through /api/bootstrap.
+  // Do not call an older Durable Object /api/companion/status implementation.
+  const bootstrapUrl=new URL(req.url);bootstrapUrl.pathname='/api/bootstrap';
+  const source=await sync.fetch(new Request(bootstrapUrl.toString(),{method:'GET'}));
+  if(!source.ok)return source;
+  let loaded;
+  try{loaded=await source.json();}catch(_){return json({error:'Ungültiger Anlagen-Datenstand.'},502);}
+  let state;
+  try{state=typeof loaded.state==='string'?(loaded.state?JSON.parse(loaded.state):null):loaded.state;}
+  catch(_){return json({error:'Anlagen-Datenstand konnte nicht gelesen werden.'},502);}
+  const faultsOpen=[],faultsProgress=[];
+  for(const asset of (state?.assets||[]))for(const fault of (asset?.faults||[])){
+   const row={id:fault.id,assetId:asset.id,assetName:asset.name,description:fault.description,reportedAt:fault.reportedAt,unitName:fault.unitBarcode||fault.unitName||''};
+   if(fault.status==='open')faultsOpen.push(row);
+   else if(fault.status==='in_progress')faultsProgress.push(row);
+  }
+  const now=new Date();
+  const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'});
+  const parts=Object.fromEntries(fmt.formatToParts(now).filter(v=>v.type!=='literal').map(v=>[v.type,v.value]));
+  const today=`${parts.year}-${parts.month}-${parts.day}`;
+  const daily=Array.isArray(state?.dailyBusiness)?state.dailyBusiness:[];
+  // Exact web-app rule: today or older, not marked done. Never reset at midnight.
+  const unfinished=daily.filter(r=>r&&r.done!==true&&typeof r.date==='string'&&r.date<=today);
+  return json({ok:true,serverTime:Date.now(),revision:Number(loaded.revision||0),openCount:faultsOpen.length,progressCount:faultsProgress.length,todayCount:unfinished.length,openFaultIds:faultsOpen.map(x=>x.id),openFaults:faultsOpen.slice(-20),latestAt:loaded.latestAt||0});
+ }
+ return sync.fetch(req);
 }
