@@ -161,19 +161,33 @@ function todayRows(){
 window.getTodayRows=todayRows;
 window.getTodayOpenCount=()=>todayRows().filter(r=>!r.done).length;
 function saveToday(rows){
- const date=todayDate(),s=C.clone(state);s.dailyBusiness=(Array.isArray(s.dailyBusiness)?s.dailyBusiness:[]).filter(r=>r&&r.date!==date&&(r.done||!(r.date<date))).concat(rows.map(r=>({...r,id:r.id||('today-'+(r.date||date)+'-'+r.assetId+'-'+r.unitId),date:r.date||date})));
- if(!persist(s))return false;
+ const date=todayDate();
+ // Alle Änderungen über den gemeinsamen lokalen Zustand vornehmen. Ein fehlgeschlagener
+ // Schreibvorgang darf weder als gespeichert gemeldet noch ans Widget übergeben werden.
+ const clean=rows.map(r=>({...r,id:r.id||('today-'+(r.date||date)+'-'+r.assetId+'-'+r.unitId),date:r.date||date}));
+ if(!change(st=>{st.dailyBusiness=(Array.isArray(st.dailyBusiness)?st.dailyBusiness:[])
+   .filter(r=>r&&r.date!==date&&(r.done||!(r.date<date))).concat(clean);}))return false;
  try{localStorage.removeItem('anlagenbuch-tagesliste-'+date);}catch(_){}
+ if(window.updateTodayButton)window.updateTodayButton();
+ if(window.publishWidget)window.publishWidget();
  return true;
 }
 function addToToday(assetId,unitId){
+ const a=state.assets.find(x=>x.id===assetId),u=a&&(a.units||[]).find(x=>x.id===unitId);
+ if(!u){toast('Tagesgeschäft konnte nicht angelegt werden: Unit nicht gefunden.');return;}
  const rows=todayRows();
- if(!rows.some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done)){
-   const old=rows.find(r=>r.assetId===assetId&&r.unitId===unitId);
-   if(old)old.done=false;else rows.push({id:'today-'+todayDate()+'-'+assetId+'-'+unitId,assetId,unitId,date:todayDate(),done:false});
-   if(saveToday(rows)){toast('Pumpe für Arbeiten Heute – Tagesgeschäft vorgemerkt.');render();if(window.updateTodayButton)window.updateTodayButton();if(window.publishWidget)window.publishWidget();}
- }else toast('Pumpe ist für heute bereits vorgemerkt.');
+ if(rows.some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done)){
+  toast('Pumpe ist für heute bereits vorgemerkt.');return;
+ }
+ const old=rows.find(r=>r.assetId===assetId&&r.unitId===unitId);
+ if(old)old.done=false;
+ else rows.push({id:'today-'+todayDate()+'-'+assetId+'-'+unitId,assetId,unitId,date:todayDate(),done:false});
+ if(!saveToday(rows)){toast('Tagesgeschäft konnte nicht gespeichert werden.');return;}
+ const check=(state.dailyBusiness||[]).some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done);
+ if(!check){toast('Fehler: Tagesgeschäft wurde nicht übernommen.');return;}
+ toast('Pumpe für Arbeiten Heute – Tagesgeschäft gespeichert.');
 }
+
 window.openTodayList=function(){const rows=todayRows().filter(r=>!r.done),valid=rows.map(r=>{const a=state.assets.find(x=>x.id===r.assetId),u=a&&(a.units||[]).find(x=>x.id===r.unitId);return a&&u?{...r,a,u}:null;}).filter(Boolean);modal(`<h2>Arbeiten Heute – Tagesgeschäft</h2><p class="hint">Alle offenen Arbeiten, auch aus vergangenen Tagen. Sie bleiben bis zum Erledigen oder Entfernen sichtbar.</p>${valid.length?valid.map(r=>`<article class="record"><div class="row"><strong>${esc(pumpDesignation(r.a,r.u))}</strong></div><p class="hint">${r.date<todayDate()?'Offen seit '+esc(r.date)+' · ':''}${esc(r.a.module)} · Tool ID ${esc(r.a.name)} · Y ${esc(r.a.y)} / X ${esc(r.a.x)}</p><div class="actions"><button data-today-open="${esc(r.assetId)}|${esc(r.unitId)}">Pumpe öffnen</button><button data-today-done="${esc(r.assetId)}|${esc(r.unitId)}" class="light">Als erledigt markieren</button><button data-today-remove="${esc(r.assetId)}|${esc(r.unitId)}" class="danger">Entfernen</button></div></article>`).join(''):'<div class="empty">Für heute sind noch keine Pumpen hinterlegt.</div>'}<div class="actions"><button id="cancel" class="light">Schließen</button></div>`);};
 window.updateTodayButton=function(){const rows=todayRows().filter(r=>!r.done),b=document.getElementById('todayPumps');if(b){b.textContent=`Arbeiten Heute – Tagesgeschäft (${rows.length})`;b.classList.toggle('todayActive',rows.length>0);}try{if(window.WidgetBridge&&state){const faults=[];for(const a of state.assets||[])for(const f of a.faults||[])if(f.status!=='resolved')faults.push({id:f.id,status:f.status,asset:a.name,at:Date.parse(f.updatedAt)||0});WidgetBridge.update(JSON.stringify({faults,todayCount:rows.length}));}}catch(_){}if(window.updateHeaderSummary)window.updateHeaderSummary(); };
 document.addEventListener('click',e=>{let b=e.target.closest('[data-today-open]');if(b){const [a,u]=b.dataset.todayOpen.split('|');$('modal').close();window.openUnitAt&&window.openUnitAt(a,u);return;}b=e.target.closest('[data-today-done]');if(b){const [a,u]=b.dataset.todayDone.split('|'),rows=todayRows(),r=rows.find(x=>x.assetId===a&&x.unitId===u);if(r&&!r.done){unitWorkForm(a,u,true);}return;}b=e.target.closest('[data-today-remove]');if(b){const [a,u]=b.dataset.todayRemove.split('|');if(saveToday(todayRows().filter(x=>!(x.assetId===a&&x.unitId===u)))){openTodayList();render();if(window.updateTodayButton)window.updateTodayButton();}return;}});

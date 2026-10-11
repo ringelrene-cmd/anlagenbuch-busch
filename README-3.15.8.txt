@@ -1,0 +1,1 @@
+Anlagenbuch 3.15.8 – Tagesgeschäft-Speichern über gemeinsamen Zustand, sofortige Zähler-/Widget-Aktualisierung, Speicherkontrolle. Sicherheitszeichen aus 3.15.7 unverändert. OneDrive-Abgleich erfordert Gerätetest.
