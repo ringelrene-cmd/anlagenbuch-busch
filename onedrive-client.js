@@ -72,7 +72,7 @@
  async function finishOfflineUploads(){
   if(!d.local||navigator.onLine===false)return;
   preferCloudPdfConflicts();
-  const pending=refs(d.local).filter(x=>/^(web-pdf|web-image):\/\/temp\//.test(x));
+  const pending=refs(d.local).filter(x=>/^web-image:\/\/temp\//.test(x)); // PDFs are read by filename from OneDrive PDFs; never re-upload
   if(!pending.length)return;
   const c=await caches.open('anlagenbuch-media-2.85');
   for(const uri of pending){

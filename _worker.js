@@ -1,4 +1,4 @@
-// Anlagenbuch 3.32 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.33 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -164,6 +164,25 @@ class OneDrive {
  async get(name){try{return new Uint8Array(await(await this.request(this.path(name)+':/content')).arrayBuffer());}catch(e){if(e.status===404)return null;throw e;}}
  async exists(name){try{await this.request(this.path(name));return true;}catch(e){if(e.status===404)return false;throw e;}}
  async put(name,bytes){return (await this.request(this.path(name)+':/content',{method:'PUT',headers:{'Content-Type':'application/octet-stream'},body:bytes})).json();}
+ // Existing instruction PDFs live in the single OneDrive folder "PDFs".
+ pdfPath(name,folder='PDFs'){
+  if(typeof name!=='string'||!name||name==='.'||name==='..'||/[\\/\u0000-\u001f]/.test(name)||name.length>240)throw Error('Ungültiger PDF-Dateiname.');
+  return '/drives/'+encodeURIComponent(this.env.ONEDRIVE_DRIVE_ID)+'/items/'+encodeURIComponent(this.env.ONEDRIVE_FOLDER_ID)+':/'+encodeURIComponent(folder)+'/'+encodeURIComponent(name);
+ }
+ async getPdf(name){
+  for(const folder of ['PDFs','PDF']){
+   try{return new Uint8Array(await(await this.request(this.pdfPath(name,folder)+':/content')).arrayBuffer());}
+   catch(e){if(e.status!==404)throw e;}
+  }
+  return null;
+ }
+ async pdfExists(name){
+  for(const folder of ['PDFs','PDF']){
+   try{await this.request(this.pdfPath(name,folder));return true;}
+   catch(e){if(e.status!==404)throw e;}
+  }
+  return false;
+ }
  async read(name){const b=await this.get(name);return b?JSON.parse(new TextDecoder().decode(b)):null;}
  async write(name,data){return this.put(name,new TextEncoder().encode(JSON.stringify(data)));}
 }
@@ -178,10 +197,30 @@ const empty=()=>({schema:1,revision:0,state:null,receipts:{}});
 class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
+ // Resolve an existing app reference to its original filename in the shared PDFs folder.
+ pdfFilename(state,uri){
+  const found=[];
+  const visit=x=>{
+   if(!x||typeof x!=='object')return;
+   if(x.pdfUri===uri){for(const value of [x.pdfName,x.title])if(typeof value==='string'&&/\.pdf$/i.test(value.trim()))found.push(value.trim());}
+   if(Array.isArray(x)){for(const v of x)visit(v);}else for(const v of Object.values(x))if(v&&typeof v==='object')visit(v);
+  };
+  visit(state);
+  return found[0]||null;
+ }
  async mediaPresent(s){
   const refs=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image|content):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);
   const names=[...refs].map(mediaName).filter(n=>!this.knownMedia.has(n));
-  for(let i=0;i<names.length;i+=6)await Promise.all(names.slice(i,i+6).map(async name=>{if(!(this.store.exists?await this.store.exists(name):await this.store.get(name)))throw Error('Zugeordnete Datei fehlt in OneDrive: '+name+'. Zuerst Medien migrieren.');this.knownMedia.add(name);}));
+  for(let i=0;i<names.length;i+=6)await Promise.all(names.slice(i,i+6).map(async name=>{
+   if(this.store.exists?await this.store.exists(name):await this.store.get(name)){this.knownMedia.add(name);return;}
+   const uri=[...refs].find(x=>{try{return mediaName(x)===name;}catch(_){return false;}});
+   const pdf=this.pdfFilename(s,uri);
+   if(pdf&&await this.store.pdfExists(pdf)){this.knownMedia.add(name);return;}
+   // A missing temporary reference must not prevent unrelated changes syncing.
+   // Do not invent, duplicate or delete an alleged replacement PDF.
+   if(uri&&uri.startsWith('web-pdf://temp/'))return;
+   throw Error('Zugeordnete Datei fehlt in OneDrive: '+name);
+  }));
  }
  async handle(req){
   const u=new URL(req.url),path=u.pathname;
@@ -189,18 +228,22 @@ class Coordinator {
    const kind=u.searchParams.get('kind');if(!['pdf','image'].includes(kind))throw Error('Ungültiger Medientyp.');
    const bytes=new Uint8Array(await req.arrayBuffer());if(!bytes.length||bytes.length>50*1024*1024)throw Error('Datei leer oder größer als 50 MB.');
    const name=decodeURIComponent(req.headers.get('X-File-Name')||'Datei');const ext=kind==='pdf'?'pdf':(name.match(/\.(png|jpe?g|webp)$/i)?.[1]||'jpg').toLowerCase();
-   if(kind==='pdf'&&!new TextDecoder().decode(bytes.slice(0,1024)).includes('%PDF-'))throw Error('Ungültige PDF-Datei.');
+   if(kind==='pdf')return response({error:'PDF-Upload deaktiviert: Vorhandene PDFs ausschließlich aus dem OneDrive-Ordner PDFs verwenden. Keine neuen Kopien erzeugt.'},409);
    const file=crypto.randomUUID()+'.'+ext;await this.store.put('media-'+file,bytes);return response({ok:true,uri:'web-'+kind+'://temp/'+file,name});
   }
   if(path==='/api/media'&&req.method==='GET'){
-   const uri=u.searchParams.get('uri'),name=mediaName(uri);let bytes=await this.store.get(name);
+   const uri=u.searchParams.get('uri'),name=mediaName(uri);const current=await this.read();const originalName=uri&&uri.startsWith('web-pdf:')?this.pdfFilename(current.state,uri):null;let bytes=originalName?await this.store.getPdf(originalName):null;if(!bytes)bytes=await this.store.get(name);
    // OneDrive-Migration: Falls bei der OneDrive-Migration nur der Datenstand/Backup vorhanden ist,
    // eine fehlende Mediendatei automatisch aus dem letzten Backup zurückholen.
    if(!bytes){
     const backup=await this.store.read('backup-latest.json');const encoded=backup?.media?.[uri];
     if(typeof encoded==='string'&&encoded){try{bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));if(bytes.length)await this.store.put(name,bytes);}catch(_){bytes=null;}}
    }
-   if(!bytes)return response({error:'Datei fehlt im gemeinsamen OneDrive-Speicher. PDF auf einem Gerät mit vorhandener Offline-Kopie einmal öffnen.'},404);
+   if(!bytes&&uri&&uri.startsWith('web-pdf:')){
+    const doc=await this.read();const filename=this.pdfFilename(doc.state,uri);
+    if(filename)bytes=await this.store.getPdf(filename);
+   }
+   if(!bytes)return response({error:'PDF nicht im OneDrive-Ordner PDFs unter verknüpftem Dateinamen gefunden.'},404);
    const ext=name.split('.').pop();return new Response(bytes,{headers:{'Content-Type':ext==='pdf'?'application/pdf':ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg','Cache-Control':'private, no-cache','X-Content-Type-Options':'nosniff'}});
   }
   if(path==='/api/backup/read'&&req.method==='GET'){const b=await this.store.read('backup-latest.json');if(!b)return response({error:'Noch kein Backup vorhanden.'},404);return response({ok:true,backup:b});}
@@ -314,7 +357,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.32',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.33',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -333,7 +376,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.32', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.33', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);

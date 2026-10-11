@@ -20,6 +20,25 @@ export class OneDrive {
  async get(name){try{return new Uint8Array(await(await this.request(this.path(name)+':/content')).arrayBuffer());}catch(e){if(e.status===404)return null;throw e;}}
  async exists(name){try{await this.request(this.path(name));return true;}catch(e){if(e.status===404)return false;throw e;}}
  async put(name,bytes){return (await this.request(this.path(name)+':/content',{method:'PUT',headers:{'Content-Type':'application/octet-stream'},body:bytes})).json();}
+ // Existing instruction PDFs live in the single OneDrive folder "PDFs".
+ pdfPath(name,folder='PDFs'){
+  if(typeof name!=='string'||!name||name==='.'||name==='..'||/[\\/\u0000-\u001f]/.test(name)||name.length>240)throw Error('Ungültiger PDF-Dateiname.');
+  return '/drives/'+encodeURIComponent(this.env.ONEDRIVE_DRIVE_ID)+'/items/'+encodeURIComponent(this.env.ONEDRIVE_FOLDER_ID)+':/'+encodeURIComponent(folder)+'/'+encodeURIComponent(name);
+ }
+ async getPdf(name){
+  for(const folder of ['PDFs','PDF']){
+   try{return new Uint8Array(await(await this.request(this.pdfPath(name,folder)+':/content')).arrayBuffer());}
+   catch(e){if(e.status!==404)throw e;}
+  }
+  return null;
+ }
+ async pdfExists(name){
+  for(const folder of ['PDFs','PDF']){
+   try{await this.request(this.pdfPath(name,folder));return true;}
+   catch(e){if(e.status!==404)throw e;}
+  }
+  return false;
+ }
  async read(name){const b=await this.get(name);return b?JSON.parse(new TextDecoder().decode(b)):null;}
  async write(name,data){return this.put(name,new TextEncoder().encode(JSON.stringify(data)));}
 }

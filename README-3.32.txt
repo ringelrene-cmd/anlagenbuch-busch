@@ -1,1 +1,1 @@
-Version 3.32: PDF-Konflikte bevorzugen OneDrive-Zuordnungen. Temporäre Medien werden nicht ohne Bytes hochgeladen. Hinweis: Nicht mehr verfügbare lokale Dateien können nur dann automatisch ersetzt werden, wenn eine eindeutige OneDrive-Zuordnung vorliegt.
+Version 3.33: PDF-Konflikte bevorzugen OneDrive-Zuordnungen. Temporäre Medien werden nicht ohne Bytes hochgeladen. Hinweis: Nicht mehr verfügbare lokale Dateien können nur dann automatisch ersetzt werden, wenn eine eindeutige OneDrive-Zuordnung vorliegt.
