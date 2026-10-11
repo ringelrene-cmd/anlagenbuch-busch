@@ -1,4 +1,4 @@
-// Anlagenbuch 3.15.9 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.15.11 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -179,7 +179,7 @@ class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
  async mediaPresent(s){
-  // 3.15.9: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
+  // 3.15.11: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
   // nicht mehr blockieren. URI-Form weiterhin validieren; fehlende Dateien
   // werden erst beim Oeffnen als 404 gemeldet, Verknuepfungen bleiben erhalten.
   const refs=new Set();
@@ -326,8 +326,48 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.15.9',provider:'onedrive'});
+ // Windows-Updates: liest den EINMAL freigegebenen OneDrive-Ordner über Microsoft Graph.
+ // Kein neuer Dateilink pro Version. Token verbleibt ausschließlich auf dem Server.
+ if((p==='/api/companion/windows-update'||p==='/api/companion/windows-download')&&req.method==='GET'){
+  if(!await authorized(req,env))return json({error:'Bitte zuerst in der Web-App anmelden.'},401);
+  const shared='https://1drv.ms/f/c/52c38b14925c0f91/IgD21JSqMNX-Tqxn4Gk2MTQLAZAPEjqALkjsm15PRJTJqMc?e=QwMPz6';
+  try{
+   // Graph-Berechtigungen gelten für das bereits konfigurierte OneDrive-Konto.
+   const graph=new OneDrive(env,null);
+   const shareId='u!'+btoa(shared).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+   const folder='/shares/'+encodeURIComponent(shareId)+'/driveItem';
+   const folderResponse=await graph.request(folder+'?$select=id,name,parentReference');
+   const folderData=await folderResponse.json();
+   const driveId=folderData.parentReference?.driveId;
+   if(!driveId||!folderData.id)throw Error('OneDrive-Ordner konnte nicht eindeutig bestimmt werden.');
+   const children=await graph.request('/drives/'+encodeURIComponent(driveId)+'/items/'+encodeURIComponent(folderData.id)+'/children?$top=200&$select=id,name,size,lastModifiedDateTime,file,parentReference');
+   const entries=(await children.json()).value||[];
+   const exe=entries.filter(x=>x.file&&/\.exe$/i.test(x.name||'')&&/begleiter|busch|anlagenbuch/i.test(x.name||''))
+    .sort((a,b)=>{const va=(a.name||'').match(/(\d+)\.(\d+)(?:\.(\d+))?/),vb=(b.name||'').match(/(\d+)\.(\d+)(?:\.(\d+))?/);
+      if(va&&vb){for(let i=1;i<=3;i++){const d=Number(vb[i]||0)-Number(va[i]||0);if(d)return d;}}
+      return Date.parse(b.lastModifiedDateTime||0)-Date.parse(a.lastModifiedDateTime||0);});
+   if(!exe.length)return json({ok:true,available:false,folderUrl:shared});
+   const file=exe[0];
+   if(p==='/api/companion/windows-update')return json({ok:true,available:true,name:file.name,size:file.size,modified:file.lastModifiedDateTime,version:(file.name.match(/(\d+\.\d+(?:\.\d+)?)/)||[])[1]||null,downloadUrl:'/api/companion/windows-download',folderUrl:shared});
+   // Der Download wird über einen frischen Graph-Link abgewickelt, ohne dass die EXE durch Cloudflare Pages muss.
+   const meta=await graph.request('/drives/'+encodeURIComponent(driveId)+'/items/'+encodeURIComponent(file.id));
+   const direct=(await meta.json())['@microsoft.graph.downloadUrl'];
+   if(!direct)return Response.redirect(shared,302);
+   return Response.redirect(direct,302);
+  }catch(e){
+   // Bei fehlenden Graph-Freigaberechten nichts als geprüft vortäuschen.
+   return json({ok:false,available:null,folderUrl:shared,error:'Automatische OneDrive-Prüfung derzeit nicht möglich: '+String(e?.message||e)},503);
+  }
+ }
+ if(p==='/api/version')return json({ok:true,version:'3.15.11',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
+ // Register the desktop companion once. Only a short-lived device token is stored on Windows.
+ if(p==='/api/companion/register'&&req.method==='POST'){
+  let data={};try{data=await req.json();}catch(_){return json({error:'Ungültige Anmeldung.'},400);}
+  const supplied=String(data.password||'');
+  if(!env.WEB_PASSWORD||!supplied||supplied!==String(env.WEB_PASSWORD))return json({error:'Anmeldung fehlgeschlagen.'},401);
+  return json({ok:true,token:await issueSignedDeviceToken(env,'device',365*86400000)});
+ }
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
   return json({ok:true,token:await issueSignedDeviceToken(env,'device',365*86400000)});
@@ -345,7 +385,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.9', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.11', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);

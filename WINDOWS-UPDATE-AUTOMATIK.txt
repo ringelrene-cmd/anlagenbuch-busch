@@ -1,0 +1,5 @@
+Windows-Update-Erkennung (Testversion)
+
+Der Button liest über /api/companion/windows-update den freigegebenen OneDrive-Ordner über Microsoft Graph aus. Die Cloudflare-Konfiguration muss Zugriff auf denselben OneDrive-Ordner haben. Fehlt die Berechtigung, bleibt der bisherige Ordnerlink als Fallback erhalten.
+
+Wichtig: Eine Web-App kann nicht selbst überprüfen, welche EXE unter Windows installiert ist, und sie kann Updates nicht unbeaufsichtigt installieren. Die Anzeige erkennt neue OneDrive-Dateiversionen; die Installation wird vom Nutzer bestätigt. Die Serverfunktion muss live mit dem freigegebenen OneDrive-Ordner getestet werden.

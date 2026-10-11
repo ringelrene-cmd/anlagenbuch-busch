@@ -34,6 +34,13 @@ export async function gateway(req,env){
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
  if(p==='/api/version')return json({ok:true,version:'3.15.2',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
+ // Register the desktop companion once. Only a short-lived device token is stored on Windows.
+ if(p==='/api/companion/register'&&req.method==='POST'){
+  let data={};try{data=await req.json();}catch(_){return json({error:'Ungültige Anmeldung.'},400);}
+  const supplied=String(data.password||'');
+  if(!env.WEB_PASSWORD||!supplied||supplied!==String(env.WEB_PASSWORD))return json({error:'Anmeldung fehlgeschlagen.'},401);
+  return json({ok:true,token:await issueSignedDeviceToken(env,'device',365*86400000)});
+ }
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
   return json({ok:true,token:await issueSignedDeviceToken(env,'device',365*86400000)});

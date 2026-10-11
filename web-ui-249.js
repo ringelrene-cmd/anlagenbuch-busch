@@ -2,8 +2,8 @@
 (()=>{
  document.title='Anlagenbuch Web · Busch Group';
 
- if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.15.9'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.15.9');}catch(_){}}});}
- const footer=document.querySelector('footer small');if(footer)footer.textContent='Anlagenbuch Web 3.15.9 · Offline-Arbeit mit lokalem Schutzspeicher · automatischer OneDrive-Abgleich';
+ if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='anlagenbuch-version'&&e.data.version==='3.15.11'){try{sessionStorage.setItem('anlagenbuch-sw-version','3.15.11');}catch(_){}}});}
+ const footer=document.querySelector('footer small');if(footer)footer.textContent='Anlagenbuch Web 3.15.11 · Offline-Arbeit mit lokalem Schutzspeicher · automatischer OneDrive-Abgleich';
  // Users can connect their installed Windows helper without re-entering the web password.
  window.connectWindowsCompanion=async()=>{
   try{
@@ -35,7 +35,7 @@
  let installPrompt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});
  // 3.00: Service Worker wird ausschließlich vom stabilen Startschutz verwaltet; keine Update-/Reload-Schleife aus der Haupt-App.
  async function installWebApp(){if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;return;}const ua=navigator.userAgent||'';if(/iPhone|iPad|iPod/.test(ua))toast('Auf iPhone/iPad: Teilen → Zum Home-Bildschirm.');else if(/Macintosh/.test(ua))toast('In Safari: Ablage → Zum Dock hinzufügen. In Chrome/Edge erscheint das Installieren-Symbol in der Adresszeile.');else toast('Im Browsermenü „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ wählen.');}
- window.showCompanionInstall=()=>{const ua=navigator.userAgent||'',android=/Android/i.test(ua),windows=/Windows/i.test(ua),apple=/iPhone|iPad|iPod|Macintosh/i.test(ua);modal(`<h2>Begleit-App installieren</h2><p>Das Anlagenbuch selbst bleibt ab Version 2.12 die Web-Version. Die Begleiter sind nur für Systemfunktionen wie Widget und Alarmton da.</p><div class="companionCards"><section class="record ${android?'recommended':''}"><h3>Android-Begleiter 2.38 ${android?'· dieses Gerät':''}</h3><p>Widget auf dem Startbildschirm mit Live-Zählern aus der Web-Version, Hintergrundalarm mit Anlagenbuch-Sirene und direkter Start der Web-Version. Android 2.33 ist die aktuelle signierte Version. Nach der Installation über „Android-Begleiter verbinden“ freigeben.</p><a class="buttonLink" href="/companion/Anlagenbuch-Begleiter-Android-2.38.apk" download>Android-Update 2.38 herunterladen</a><p class="hint">APK öffnen und die Android-Installation bestätigen. Die bisherige Begleit-App nicht deinstallieren.</p></section><section class="record ${windows?'recommended':''}"><h3>Windows-Begleiter 2.26 ${windows?'· dieses Gerät':''}</h3><p>Kleiner Hintergrund-Begleiter im Infobereich. Er prüft neue Störungen, spielt den Sirenenton und öffnet die Web-Version.</p><a class="buttonLink" href="/companion/Anlagenbuch-Begleiter-Windows-2.26-Setup.exe" download>Windows-Update 2.26 als EXE herunterladen</a><p class="hint">EXE herunterladen und per Doppelklick starten. Nach der Installation in der Web-App „Windows-Begleiter verbinden“ wählen. Das Anlagendaten-Passwort wird nicht erneut abgefragt.</p></section><section class="record ${apple?'recommended':''}"><h3>Apple ${apple?'· dieses Gerät':''}</h3><p>iPhone, iPad und Mac können die Web-App direkt installieren. Web-Benachrichtigungen nutzen den Systemton; ein fest erzwungener eigener Sirenenton im geschlossenen Zustand benötigt bei Apple eine signierte native App.</p><button id="installPwa" type="button">Web-App installieren</button></section></div><p class="hint">Android- und Windows-Updates werden hier bereitgestellt; die Installation selbst wird aus Sicherheitsgründen vom Betriebssystem bestätigt. Auf Firmenrechnern können Installationen durch IT-Richtlinien gesperrt sein. Dann die Web-Version ohne Begleiter weiter im Browser verwenden.</p><div class="actions"><button id="cancel" class="light">Schließen</button></div>`);if($('installPwa'))$('installPwa').onclick=installWebApp;};
+ window.showCompanionInstall=()=>{const ua=navigator.userAgent||'',android=/Android/i.test(ua),windows=/Windows/i.test(ua),apple=/iPhone|iPad|iPod|Macintosh/i.test(ua);modal(`<h2>Begleit-App installieren</h2><p>Das Anlagenbuch selbst bleibt ab Version 2.12 die Web-Version. Die Begleiter sind nur für Systemfunktionen wie Widget und Alarmton da.</p><div class="companionCards"><section class="record ${android?'recommended':''}"><h3>Android-Begleiter 2.39 ${android?'· dieses Gerät':''}</h3><p>Widget auf dem Startbildschirm mit Live-Zählern aus der Web-Version, Hintergrundalarm mit Anlagenbuch-Sirene und direkter Start der Web-Version. Android 2.39 ist die aktuelle signierte Version. Die Gerätefreigabe ist bei bestehenden Verbindungen weiterhin gültig.</p><a class="buttonLink" href="/companion/Anlagenbuch-Begleiter-Android-2.39.apk" download>Android-Update 2.39 herunterladen</a><p class="hint">APK öffnen und die Android-Installation bestätigen. Die bisherige Begleit-App nicht deinstallieren.</p></section><section class="record ${windows?'recommended':''}"><h3>Windows-Begleiter 3.16 ${windows?'· dieses Gerät':''}</h3><p>Automatische Statusabfrage mit sicher gespeicherter Gerätefreigabe, Sirene und Taskleistenanzeige.</p><a class="buttonLink" href="https://1drv.ms/f/c/52c38b14925c0f91/IgD21JSqMNX-Tqxn4Gk2MTQLAZAPEjqALkjsm15PRJTJqMc?e=QwMPz6" target="_blank" rel="noopener noreferrer">Windows-Begleiter 3.16 in OneDrive öffnen</a><p class="hint">Datei im OneDrive-Ordner auswählen und herunterladen. Einmalige Anmeldung bei der Ersteinrichtung; danach automatischer Datenabruf.</p></section><section class="record ${apple?'recommended':''}"><h3>Apple ${apple?'· dieses Gerät':''}</h3><p>iPhone, iPad und Mac können die Web-App direkt installieren. Web-Benachrichtigungen nutzen den Systemton; ein fest erzwungener eigener Sirenenton im geschlossenen Zustand benötigt bei Apple eine signierte native App.</p><button id="installPwa" type="button">Web-App installieren</button></section></div><p class="hint">Android- und Windows-Updates werden hier bereitgestellt. Neue Installationen können hier einmalig sicher freigegeben werden; die Installation selbst wird aus Sicherheitsgründen vom Betriebssystem bestätigt. Auf Firmenrechnern können Installationen durch IT-Richtlinien gesperrt sein. Dann die Web-Version ohne Begleiter weiter im Browser verwenden.</p><div class="actions"><button id="cancel" class="light">Schließen</button></div>`);if($('installPwa'))$('installPwa').onclick=installWebApp;if($('pairInstalledHelper'))$('pairInstalledHelper').onclick=()=>{if(android)window.connectAndroidCompanion();else if(windows)window.connectWindowsCompanion();else toast('Gerätefreigabe auf dem jeweiligen Android- oder Windows-Gerät öffnen.');};};
  if($('companionInstall'))$('companionInstall').onclick=showCompanionInstall;
 
  if($('teamSetup'))$('teamSetup').onclick=()=>{if(window.CompanionNative&&window.companySetupPanel){companySetupPanel();return;}modal('<h2>Firmenzugang</h2><p>Der OneDrive-Firmenzugang liegt bei der reinen Web-Version geschützt auf dem Server und wird nicht an den Browser ausgegeben.</p><p>Die Begleiter werden künftig über die Anmeldung der Web-App verbunden. Die Android-APK 2.33 muss hierfür noch erstellt werden.</p><div class="actions"><button id="cancel" class="light">Schließen</button></div>');};
@@ -52,5 +52,33 @@
   $('webQrOpen').onclick=()=>process($('webQrText').value);$('webQrText').onkeydown=e=>{if(e.key==='Enter')process(e.target.value);};
   $('webQrPhoto').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{await ensureQrLib();const u=URL.createObjectURL(f),img=new Image();img.onload=()=>{try{const raw=decodeImageSource(img,img.naturalWidth,img.naturalHeight);URL.revokeObjectURL(u);raw?process(raw):st.textContent='Auf dem Foto wurde kein QR-Code erkannt.';}catch(err){st.textContent=err.message;}};img.onerror=()=>{URL.revokeObjectURL(u);st.textContent='Foto konnte nicht gelesen werden.';};img.src=u;}catch(err){st.textContent=err.message;}};
   (async()=>{try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Dieser Browser stellt keine Kamera für Webseiten bereit.');if('BarcodeDetector'in window){try{detector=new BarcodeDetector({formats:['qr_code']});}catch(_){detector=null;}}if(!detector)await ensureQrLib();stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});video.srcObject=stream;await video.play();st.textContent='QR-Code in das Kamerabild halten';scanFrame();}catch(e){st.textContent=e.message+' Du kannst darunter ein Foto auswählen oder einen USB-Scanner verwenden.';stop();}})();
+ };
+})();
+
+
+// Automatische Windows-Update-Erkennung beim Öffnen des Begleiter-Dialogs.
+// Die Web-App kann nicht feststellen, welche EXE lokal installiert ist; sie meldet
+// daher neue OneDrive-Dateien, statt eine Installation zu behaupten.
+(function(){
+ const original=window.showCompanionInstall;
+ if(typeof original!=='function')return;
+ window.showCompanionInstall=function(){
+  original.apply(this,arguments);
+  const anchor=[...document.querySelectorAll('a[href*="1drv.ms/f/"]')].find(a=>a.textContent.includes('Windows'));
+  if(!anchor)return;
+  const status=document.createElement('p');status.className='hint';status.textContent='Prüfe Windows-Updates in OneDrive …';
+  anchor.insertAdjacentElement('afterend',status);
+  fetch('/api/companion/windows-update',{credentials:'same-origin',cache:'no-store'}).then(async r=>{
+   const info=await r.json();if(!r.ok||!info.ok)throw new Error(info.error||'OneDrive nicht erreichbar');
+   if(!info.available){status.textContent='Zurzeit keine Windows-EXE in diesem Ordner gefunden.';return;}
+   const key='ab-windows-update-file';const signature=[info.name,info.modified,info.size].join('|');
+   const prev=localStorage.getItem(key);
+   const newer=!!prev&&prev!==signature;
+   status.textContent=(newer?'Neue Windows-Datei erkannt: ':'Aktuelle Windows-Datei: ')+info.name+(info.modified?' · '+new Date(info.modified).toLocaleString('de-DE'):'');
+   anchor.textContent='Windows-Begleiter herunterladen';
+   anchor.href=info.downloadUrl;
+   anchor.removeAttribute('download');
+   anchor.onclick=()=>{try{localStorage.setItem(key,signature);}catch(_){}};
+  }).catch(e=>{status.textContent='Automatische Prüfung nicht verfügbar. Ordner manuell öffnen. '+e.message;});
  };
 })();
