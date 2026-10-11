@@ -1,1 +1,1 @@
-Version 3.15.8 (Test): Rand-Transparenz von Sicherheitszeichen, nicht-destruktive Sync-Korrektur. Originalbilder zusätzlich beibehalten. Bestehende OneDrive-Daten und Begleiter unberührt. Vor Produktiveinsatz den Abgleich auf zwei Geräten prüfen.
+Version 3.15.9 (Test): Rand-Transparenz von Sicherheitszeichen, nicht-destruktive Sync-Korrektur. Originalbilder zusätzlich beibehalten. Bestehende OneDrive-Daten und Begleiter unberührt. Vor Produktiveinsatz den Abgleich auf zwei Geräten prüfen.

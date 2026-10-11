@@ -1,4 +1,4 @@
-// Anlagenbuch 3.15.8 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.15.9 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -179,10 +179,15 @@ class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
  async mediaPresent(s){
-  const refs=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image|content):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);
-  const names=[...refs].map(mediaName).filter(n=>!this.knownMedia.has(n));
-  for(let i=0;i<names.length;i+=6)await Promise.all(names.slice(i,i+6).map(async name=>{if(!(this.store.exists?await this.store.exists(name):await this.store.get(name)))throw Error('Zugeordnete Datei fehlt in OneDrive: '+name+'. Zuerst Medien migrieren.');this.knownMedia.add(name);}));
+  // 3.15.9: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
+  // nicht mehr blockieren. URI-Form weiterhin validieren; fehlende Dateien
+  // werden erst beim Oeffnen als 404 gemeldet, Verknuepfungen bleiben erhalten.
+  const refs=new Set();
+  const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};
+  scan(s);
+  for(const uri of refs)mediaName(uri);
  }
+
  async handle(req){
   const u=new URL(req.url),path=u.pathname;
   if(path==='/api/media/upload'&&req.method==='POST'){
@@ -321,7 +326,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.15.8',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.15.9',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -340,7 +345,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.8', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.9', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);

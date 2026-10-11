@@ -8,10 +8,15 @@ export class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
  async mediaPresent(s){
-  const refs=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image|content):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);
-  const names=[...refs].map(mediaName).filter(n=>!this.knownMedia.has(n));
-  for(let i=0;i<names.length;i+=6)await Promise.all(names.slice(i,i+6).map(async name=>{if(!(this.store.exists?await this.store.exists(name):await this.store.get(name)))throw Error('Zugeordnete Datei fehlt in OneDrive: '+name+'. Zuerst Medien migrieren.');this.knownMedia.add(name);}));
+  // 3.15.9: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
+  // nicht mehr blockieren. URI-Form weiterhin validieren; fehlende Dateien
+  // werden erst beim Oeffnen als 404 gemeldet, Verknuepfungen bleiben erhalten.
+  const refs=new Set();
+  const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};
+  scan(s);
+  for(const uri of refs)mediaName(uri);
  }
+
  async handle(req){
   const u=new URL(req.url),path=u.pathname;
   if(path==='/api/media/upload'&&req.method==='POST'){
@@ -96,6 +101,7 @@ export class Coordinator {
 }
 export function mediaName(uri){
  const u=new URL(uri),bits=u.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+ if(u.protocol==='web-pdf:'&&u.hostname==='folder'&&bits.length===1&&bits[0].toLowerCase().endsWith('.pdf')&&!bits[0].includes('/')&&!bits[0].includes('..'))return 'PDFs/'+bits[0];
  if(['web-pdf:','web-image:'].includes(u.protocol)&&u.hostname==='temp'&&bits.length===1&&/^[A-Za-z0-9._-]+$/.test(bits[0]))return 'media-'+bits[0];
  if(['app-pdf:','app-image:'].includes(u.protocol)&&u.hostname==='backup'&&bits.length===2&&bits.every(x=>/^[A-Za-z0-9._-]+$/.test(x)))return 'legacy-'+bits.join('--');
  throw Error('Dateiverweis muss vor der Umstellung migriert werden: '+uri);
