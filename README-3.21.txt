@@ -1,1 +1,0 @@
-Web 3.21: Service-Worker-Offline-Start mit Pflichtcache fuer Startseiten und Hintergrund-Cache fuer Programmdateien. Keine Datenloeschung, keine Widget-Oberflaechen-Aenderung. Der Widget-Aufruf im externen Browser ist weiterhin geraeteabhaengig.

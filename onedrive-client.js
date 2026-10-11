@@ -21,25 +21,10 @@
   storePacked(M.pack(d));
  }
  cleanupLegacy();
- let busy=false,error='',waitUntil=0,retryMs=5000,applying=false,syncAgain=false;
- let lastSuccessfulSync=0,lastAttempt=0,retryTimer=null,saveTimer=null;
- const MIN_SYNC_GAP=12000;
- function scheduleSync(delay=0){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{retryTimer=null;sync();},Math.max(0,delay));}
+ let busy=false,error='',waitUntil=0,retryMs=2000,applying=false,syncAgain=false;
  const emit=()=>window.cloudChanged?.();
- let mediaPrefetchTimer=null;
- function primeOfflineMedia(){
-  if(navigator.onLine===false||!d.local||!('serviceWorker' in navigator))return;
-  clearTimeout(mediaPrefetchTimer);
-  mediaPrefetchTimer=setTimeout(()=>{
-   const uris=refs(d.local);
-   if(!uris.length)return;
-   navigator.serviceWorker.ready.then(reg=>{
-    (navigator.serviceWorker.controller||reg.active)?.postMessage({type:'offline-media-prefetch',uris});
-   }).catch(()=>{});
-  },1500);
- }
  function persist(next){
-  const packed=M.pack(next);d=next;storePacked(packed);primeOfflineMedia();
+  const packed=M.pack(next);d=next;storePacked(packed);
  }
  function apply(){if(!d.local)return;applying=true;try{if(window.applyMergedWebState&&window.applyMergedWebState(JSON.stringify(d.local))===false)throw Error('Datenstand konnte nicht angezeigt werden.');window.dispatchEvent(new CustomEvent('anlagenbuch:remote-applied',{detail:{revision:Number(d.revision||0)}}));}finally{applying=false;}}
  const dirty=()=>!M.same(d.base,d.local);
@@ -53,59 +38,11 @@
   if(m.conflicts.length){persist({...d,local:m.state,base:M.copy(remote),revision,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:revision});apply();return;}
   persist({...d,local:m.state,base:remote,revision,pending:null,conflicts:[]});apply();
  }
- // Offline uploads retain their bytes locally until the cloud has accepted them.
- // Cloud PDF mappings take precedence over a device-specific temporary reference.
- // Do not alter unrelated records, faults or unit fields.
- function preferCloudPdfConflicts(){
-  const rows=(d.conflicts||[]),pdfRows=rows.filter(c=>c.path?.at(-1)==='pdfUri'&&typeof c.remote==='string'&&/^(web-pdf|app-pdf):/.test(c.remote));
-  if(!pdfRows.length)return;
-  let local=M.copy(d.local);
-  for(const c of pdfRows){try{local=M.resolve(local,c.path,c.remote,false);}catch(_){}}
-  persist({...d,local,conflicts:rows.filter(c=>!pdfRows.includes(c)),pending:null});apply();
- }
- function replaceCloudReference(oldUri,cloudUri){
-  if(!cloudUri||cloudUri===oldUri)return false;
-  function walk(v){if(v===oldUri)return cloudUri;if(Array.isArray(v))return v.map(walk);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=walk(x);return o;}return v;}
-  const next=walk(d.local);if(M.same(next,d.local))return false;
-  persist({...d,local:next,pending:null});apply();return true;
- }
- async function finishOfflineUploads(){
-  if(!d.local||navigator.onLine===false)return;
-  preferCloudPdfConflicts();
-  const pending=refs(d.local).filter(x=>/^web-image:\/\/temp\//.test(x)); // PDFs are read by filename from OneDrive PDFs; never re-upload
-  if(!pending.length)return;
-  const c=await caches.open('anlagenbuch-media-2.85');
-  for(const uri of pending){
-   const url=mediaUrl(uri);
-   let hit=await c.match(url);
-   // Reuse previous version caches before reporting a missing offline upload.
-   if(!hit){for(const name of (await caches.keys()).filter(n=>n.startsWith('anlagenbuch-media-')&&n!=='anlagenbuch-media-2.85')){try{hit=await(await caches.open(name)).match(url);if(hit){await c.put(url,hit.clone());break;}}catch(_){}}}
-   if(!hit){
-    // If this device has lost its temporary bytes, restore the authoritative
-    // OneDrive reference for the same conflicted PDF, instead of blocking all sync.
-    const match=(d.conflicts||[]).find(c=>c.local===uri&&c.path?.at(-1)==='pdfUri'&&typeof c.remote==='string');
-    if(match&&replaceCloudReference(uri,match.remote))continue;
-    // Never publish a dangling local URI as if the file had uploaded.
-    throw Error('PDF lokal nicht vorhanden und keine eindeutige OneDrive-Zuordnung gefunden: '+uri+'. Andere Daten wurden nicht gelöscht.');
-   }
-   const cacheCopy=hit.clone();
-   const file=await hit.blob(),kind=uri.startsWith('web-pdf:')?'pdf':'image';
-   const uploaded=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(uri.split('/').pop()+ (kind==='pdf'?'.pdf':'.jpg'))},body:file});
-   const oldValue=uri,newValue=uploaded.uri;
-   function replace(v){if(v===oldValue)return newValue;if(Array.isArray(v))return v.map(replace);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=replace(x);return o;}return v;}
-   // Replacing a temporary URI is part of the pending local edit, not a server merge.
-   await c.put(mediaUrl(newValue),cacheCopy);
-   persist({...d,local:replace(d.local),pending:null});
-  }
-  apply();
- }
  async function sync(){
   if(navigator.onLine===false||Date.now()<waitUntil)return;
   if(busy){syncAgain=true;return;}
-  if(Date.now()-lastAttempt<MIN_SYNC_GAP){scheduleSync(MIN_SYNC_GAP-(Date.now()-lastAttempt));return;}
-  busy=true;lastAttempt=Date.now();syncAgain=false;emit();
+  busy=true;syncAgain=false;error='';emit();
   try{
-   await finishOfflineUploads();
    // 2.91: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
    // Der Server übernimmt bei /api/sync alle konfliktfreien Teile einer Transaktion
    // und lässt nur die tatsächlich widersprüchlichen Felder zur Auswahl offen.
@@ -149,14 +86,13 @@
     const j=await api('/api/bootstrap');
     if(j.state&&j.revision>=d.revision){const remote=JSON.parse(j.state);accept(remote,j.revision,d.base);}
    }
-   lastSuccessfulSync=Date.now();error='';retryMs=5000;waitUntil=0;
-  }catch(e){error=e.message||String(e);retryMs=Math.min(120000,Math.max(5000,retryMs*2));waitUntil=Math.max(waitUntil,Date.now()+retryMs);if(e.status===409&&e.data?.conflicts&&e.data?.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
+  }catch(e){error=e.message;if(e.status===409&&e.data.conflicts&&e.data.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
   finally{
    busy=false;emit();
-   if(syncAgain&&navigator.onLine!==false&&Date.now()>=waitUntil)scheduleSync(MIN_SYNC_GAP);
+   if(syncAgain&&navigator.onLine!==false)setTimeout(sync,0);
   }
  }
- function save(raw){if(applying)return true;try{const local=JSON.parse(raw);if(M.same(d.local,local))return true;persist({...d,local,pending:null});clearTimeout(saveTimer);saveTimer=setTimeout(()=>scheduleSync(100),1200);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
+ function save(raw){if(applying)return true;try{const local=JSON.parse(raw);persist({...d,local});setTimeout(sync,0);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
  async function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-backup',1);r.onupgradeneeded=()=>r.result.createObjectStore('backup');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
  async function backupStore(value){const b=await db();try{return await new Promise((resolve,reject)=>{const t=b.transaction('backup',value?'readwrite':'readonly'),s=t.objectStore('backup'),r=value?s.put(value,'latest'):s.get('latest');t.oncomplete=()=>resolve(value||r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}finally{b.close();}}
  function refs(s){const set=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))set.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);return [...set];}
@@ -188,20 +124,11 @@
   rows.forEach((c,i)=>{if(choices[i]==='local')next=M.resolve(next,c.path,c.local,c.localMissing);});
   persist({...d,base:M.copy(d.conflictRemote),revision:d.conflictRevision,local:next,conflicts:[],conflictRemote:null,conflictRevision:0,pending:null});apply();sync();
  }
- window.OneDriveSync={sync,forceRetry:()=>{if(busy)return;waitUntil=0;lastAttempt=0;clearTimeout(retryTimer);sync();},makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,retrySeconds:Math.max(0,Math.ceil((waitUntil-Date.now())/1000)),lastSuccessfulSync,lastAttempt,backups:[]})};
+ window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,backups:[]})};
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
- async function upload(file,kind){
-  const c=await caches.open('anlagenbuch-media-2.85');
-  if(navigator.onLine===false){
-   const uri=(kind==='pdf'?'web-pdf://temp/':'web-image://temp/')+crypto.randomUUID();
-   await c.put(mediaUrl(uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));
-   return {uri,name:file.name};
-  }
-  try{const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
-  catch(e){if(navigator.onLine!==false)throw e;const uri=(kind==='pdf'?'web-pdf://temp/':'web-image://temp/')+crypto.randomUUID();await c.put(mediaUrl(uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return {uri,name:file.name};}
- }
+ async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.85');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
  window.Native={load:()=>d.local?JSON.stringify(d.local):'',seed:()=>window.SEED_TEXT||'',save,
   makeBackup:raw=>save(raw),backupStatus:()=>JSON.stringify(OneDriveSync.status()),retryCloud:()=>{sync();uploadBackup();return true;},
   queueFaultSync:()=>true,queueFaultSyncBatch:()=>true,queueWorkSync:()=>true,queueWorkSyncBatch:()=>true,syncFaults:()=>{sync();return true;},syncWork:()=>{sync();return true;},resetFaultSyncForRestore:()=>true,resetWorkSyncForRestore:()=>true,
@@ -220,20 +147,20 @@
  // Hintergrund-Tabs sparsamer alle 60 s. Fokus, Rueckkehr und Online-Wechsel gleichen sofort ab.
  let revisionWatchBusy=false,revisionWatchSeen=Number(d.revision||0);
  async function revisionWatch(){
-  if(revisionWatchBusy||busy||document.hidden||navigator.onLine===false||Date.now()<waitUntil)return;revisionWatchBusy=true;
+  if(revisionWatchBusy||document.hidden||navigator.onLine===false)return;revisionWatchBusy=true;
   try{
    const r=await fetch('/api/health',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
    if(!r.ok)return;const j=await r.json(),remote=Number(j.revision||0),local=Number(d.revision||0);
    if(remote>local){
     revisionWatchSeen=Math.max(revisionWatchSeen,remote);sync();
-    // Kein automatischer Reload: lokale Aenderungen duerfen nicht unterbrochen werden.
+    setTimeout(()=>{if(!document.hidden&&navigator.onLine!==false&&Number(d.revision||0)<revisionWatchSeen)location.reload();},2500);
    }
   }catch(_){}finally{revisionWatchBusy=false;}
  }
  // 2.96: visible clients actively verify the central OneDrive revision. This is intentionally
  // independent of the normal merge timer so an already-open PC cannot remain on a stale UI.
  async function livePull(){
-  if(busy||document.hidden||navigator.onLine===false||Date.now()<waitUntil)return;
+  if(document.hidden||navigator.onLine===false)return;
   try{
    const j=await api('/api/bootstrap');
    const remoteRev=Number(j.revision||0);
@@ -248,15 +175,5 @@
    }
   }catch(_){}
  }
- // Ein einzelner Sync-Koordinator statt konkurrierender Requests und Endlosschleifen.
- setInterval(()=>{if(!document.hidden&&navigator.onLine!==false){if(!busy&&Date.now()>=waitUntil&&Date.now()-lastAttempt>=15000)sync();}},15000);
- setInterval(()=>{if(!document.hidden&&!busy)revisionWatch();},30000);
- setInterval(()=>{if(document.hidden&&!busy&&Date.now()>=waitUntil)sync();},60000);
- setInterval(uploadBackup,120000);
- window.addEventListener('online',()=>{waitUntil=0;scheduleSync(1500);uploadBackup();primeOfflineMedia();});
- window.addEventListener('offline',emit);
- window.addEventListener('focus',()=>scheduleSync(1200));
- window.addEventListener('pageshow',()=>scheduleSync(1200));
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleSync(1200);});
- setTimeout(()=>{scheduleSync(500);primeOfflineMedia();},300);
+ setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();},300);
 })();
