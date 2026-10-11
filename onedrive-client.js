@@ -21,7 +21,10 @@
   storePacked(M.pack(d));
  }
  cleanupLegacy();
- let busy=false,error='',waitUntil=0,retryMs=2000,applying=false,syncAgain=false;
+ let busy=false,error='',waitUntil=0,retryMs=5000,applying=false,syncAgain=false;
+ let lastSuccessfulSync=0,lastAttempt=0,retryTimer=null,saveTimer=null;
+ const MIN_SYNC_GAP=12000;
+ function scheduleSync(delay=0){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{retryTimer=null;sync();},Math.max(0,delay));}
  const emit=()=>window.cloudChanged?.();
  let mediaPrefetchTimer=null;
  function primeOfflineMedia(){
@@ -79,7 +82,8 @@
  async function sync(){
   if(navigator.onLine===false||Date.now()<waitUntil)return;
   if(busy){syncAgain=true;return;}
-  busy=true;syncAgain=false;error='';emit();
+  if(Date.now()-lastAttempt<MIN_SYNC_GAP){scheduleSync(MIN_SYNC_GAP-(Date.now()-lastAttempt));return;}
+  busy=true;lastAttempt=Date.now();syncAgain=false;emit();
   try{
    await finishOfflineUploads();
    // 2.91: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
@@ -125,13 +129,14 @@
     const j=await api('/api/bootstrap');
     if(j.state&&j.revision>=d.revision){const remote=JSON.parse(j.state);accept(remote,j.revision,d.base);}
    }
-  }catch(e){error=e.message;if(e.status===409&&e.data?.conflicts&&e.data?.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
+   lastSuccessfulSync=Date.now();error='';retryMs=5000;waitUntil=0;
+  }catch(e){error=e.message||String(e);retryMs=Math.min(120000,Math.max(5000,retryMs*2));waitUntil=Math.max(waitUntil,Date.now()+retryMs);if(e.status===409&&e.data?.conflicts&&e.data?.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
   finally{
    busy=false;emit();
-   if(syncAgain&&navigator.onLine!==false)setTimeout(sync,0);
+   if(syncAgain&&navigator.onLine!==false&&Date.now()>=waitUntil)scheduleSync(MIN_SYNC_GAP);
   }
  }
- function save(raw){if(applying)return true;try{const local=JSON.parse(raw);persist({...d,local});setTimeout(sync,0);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
+ function save(raw){if(applying)return true;try{const local=JSON.parse(raw);persist({...d,local});clearTimeout(saveTimer);saveTimer=setTimeout(()=>scheduleSync(100),1200);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
  async function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-backup',1);r.onupgradeneeded=()=>r.result.createObjectStore('backup');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
  async function backupStore(value){const b=await db();try{return await new Promise((resolve,reject)=>{const t=b.transaction('backup',value?'readwrite':'readonly'),s=t.objectStore('backup'),r=value?s.put(value,'latest'):s.get('latest');t.oncomplete=()=>resolve(value||r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}finally{b.close();}}
  function refs(s){const set=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))set.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);return [...set];}
@@ -163,7 +168,7 @@
   rows.forEach((c,i)=>{if(choices[i]==='local')next=M.resolve(next,c.path,c.local,c.localMissing);});
   persist({...d,base:M.copy(d.conflictRemote),revision:d.conflictRevision,local:next,conflicts:[],conflictRemote:null,conflictRevision:0,pending:null});apply();sync();
  }
- window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,retrySeconds:Math.max(0,Math.ceil((waitUntil-Date.now())/1000)),backups:[]})};
+ window.OneDriveSync={sync,forceRetry:()=>{if(busy)return;waitUntil=0;lastAttempt=0;clearTimeout(retryTimer);sync();},makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,retrySeconds:Math.max(0,Math.ceil((waitUntil-Date.now())/1000)),lastSuccessfulSync,lastAttempt,backups:[]})};
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
@@ -195,20 +200,20 @@
  // Hintergrund-Tabs sparsamer alle 60 s. Fokus, Rueckkehr und Online-Wechsel gleichen sofort ab.
  let revisionWatchBusy=false,revisionWatchSeen=Number(d.revision||0);
  async function revisionWatch(){
-  if(revisionWatchBusy||document.hidden||navigator.onLine===false)return;revisionWatchBusy=true;
+  if(revisionWatchBusy||busy||document.hidden||navigator.onLine===false||Date.now()<waitUntil)return;revisionWatchBusy=true;
   try{
    const r=await fetch('/api/health',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
    if(!r.ok)return;const j=await r.json(),remote=Number(j.revision||0),local=Number(d.revision||0);
    if(remote>local){
     revisionWatchSeen=Math.max(revisionWatchSeen,remote);sync();
-    setTimeout(()=>{if(!document.hidden&&navigator.onLine!==false&&Number(d.revision||0)<revisionWatchSeen)location.reload();},2500);
+    // Kein automatischer Reload: lokale Aenderungen duerfen nicht unterbrochen werden.
    }
   }catch(_){}finally{revisionWatchBusy=false;}
  }
  // 2.96: visible clients actively verify the central OneDrive revision. This is intentionally
  // independent of the normal merge timer so an already-open PC cannot remain on a stale UI.
  async function livePull(){
-  if(document.hidden||navigator.onLine===false)return;
+  if(busy||document.hidden||navigator.onLine===false||Date.now()<waitUntil)return;
   try{
    const j=await api('/api/bootstrap');
    const remoteRev=Number(j.revision||0);
@@ -223,5 +228,15 @@
    }
   }catch(_){}
  }
- setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();primeOfflineMedia();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();primeOfflineMedia();},300);
+ // Ein einzelner Sync-Koordinator statt konkurrierender Requests und Endlosschleifen.
+ setInterval(()=>{if(!document.hidden&&navigator.onLine!==false){if(!busy&&Date.now()>=waitUntil&&Date.now()-lastAttempt>=15000)sync();}},15000);
+ setInterval(()=>{if(!document.hidden&&!busy)revisionWatch();},30000);
+ setInterval(()=>{if(document.hidden&&!busy&&Date.now()>=waitUntil)sync();},60000);
+ setInterval(uploadBackup,120000);
+ window.addEventListener('online',()=>{waitUntil=0;scheduleSync(1500);uploadBackup();primeOfflineMedia();});
+ window.addEventListener('offline',emit);
+ window.addEventListener('focus',()=>scheduleSync(1200));
+ window.addEventListener('pageshow',()=>scheduleSync(1200));
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleSync(1200);});
+ setTimeout(()=>{scheduleSync(500);primeOfflineMedia();},300);
 })();
