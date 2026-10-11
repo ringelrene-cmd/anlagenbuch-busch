@@ -1,4 +1,4 @@
-// Anlagenbuch 3.30 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.31 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -241,6 +241,8 @@ class Coordinator {
     }
     return response({ok:false,error:'Widersprüchliche Änderungen bitte auswählen. Andere Änderungen wurden bereits synchronisiert.',conflicts:merged.conflicts,state,revision,at},409);
    }
+   // Idempotent no-op: a repeated snapshot must not advance the shared revision.
+   if(doc.state&&M.same(next,doc.state))return response({ok:true,state:doc.state,revision:doc.revision,at:doc.at||Date.now(),unchanged:true});
    const receipt={state:next,revision:doc.revision+1,at:Date.now()};
    // Receipt and state share one OneDrive write: lost responses can safely retry.
    // An offline client may retry long after 200 other edits. Keep its receipt,
@@ -312,7 +314,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.30',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.31',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -331,7 +333,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.30', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.31', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);

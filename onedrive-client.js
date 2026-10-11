@@ -137,7 +137,7 @@
    if(syncAgain&&navigator.onLine!==false&&Date.now()>=waitUntil)scheduleSync(MIN_SYNC_GAP);
   }
  }
- function save(raw){if(applying)return true;try{const local=JSON.parse(raw);persist({...d,local});clearTimeout(saveTimer);saveTimer=setTimeout(()=>scheduleSync(100),1200);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
+ function save(raw){if(applying)return true;try{const local=JSON.parse(raw);if(M.same(d.local,local))return true;persist({...d,local,pending:null});clearTimeout(saveTimer);saveTimer=setTimeout(()=>scheduleSync(100),1200);emit();return true;}catch(e){error='Speichern fehlgeschlagen: '+e.message;emit();return false;}}
  async function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open('anlagenbuch-backup',1);r.onupgradeneeded=()=>r.result.createObjectStore('backup');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
  async function backupStore(value){const b=await db();try{return await new Promise((resolve,reject)=>{const t=b.transaction('backup',value?'readwrite':'readonly'),s=t.objectStore('backup'),r=value?s.put(value,'latest'):s.get('latest');t.oncomplete=()=>resolve(value||r.result);t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}finally{b.close();}}
  function refs(s){const set=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))set.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(s);return [...set];}

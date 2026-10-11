@@ -1,5 +1,5 @@
  'use strict';
-const VERSION='3.30';
+const VERSION='3.31';
 const CACHE='anlagenbuch-shell-'+VERSION;
 const MEDIA_CACHE='anlagenbuch-media-2.85';
 const CORE=["/index.html","/app.html","/login.html","/offline-store-235.js","/web-bootstrap-onedrive.js","/sw.js"];
@@ -23,10 +23,10 @@ async function offlineStatic(req){
    if(r.ok&&!r.redirected&&r.type==='basic')await(await caches.open(CACHE)).put(path,r.clone()).catch(()=>{});
    return r;
  }catch(_){
-   if(req.mode==='navigate')return await cached(path==='/app.html'?'/app.html':'/index.html')||Response.error();
+   if(req.mode==='navigate')return await cached(path==='/app.html'?'/app.html':path==='/login.html'?'/login.html':'/index.html')||Response.error();
    return Response.error();
  }
 }
 async function media(req){const c=await caches.open(MEDIA_CACHE),hit=await c.match(req);if(hit)return hit;try{const r=await fetch(req);if(r.ok)await c.put(req,r.clone()).catch(()=>{});return r;}catch(_){return Response.error();}}
 self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;const u=new URL(req.url);if(u.origin!==self.location.origin)return;if(u.pathname==='/api/media'){e.respondWith(media(req));return;}if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/server/')||u.pathname==='/companion-auth')return;const path=norm(req.url);if(req.mode==='navigate'||STATIC_PATHS.has(path)){e.respondWith(offlineStatic(req));}});
-self.addEventListener('message',e=>{const msg=e.data||{};if(msg.type==='activate-now'){e.waitUntil(self.skipWaiting());return;}if(msg.type==='offline-warmup'){e.waitUntil((async()=>{const missing=await fill(INSTALL_ASSETS);e.source?.postMessage({type:'offline-warmup-result',version:VERSION,ready:missing.length===0,missing});})());}if(msg.type==='offline-media-prefetch'){e.waitUntil((async()=>{const c=await caches.open(MEDIA_CACHE);let ok=0,failed=0;for(const uri of [...new Set(Array.isArray(msg.uris)?msg.uris:[])].slice(0,2000)){if(typeof uri!=='string'||!/^(app-pdf|app-image|web-pdf|web-image):/.test(uri))continue;const url='/api/media?uri='+encodeURIComponent(uri);if(await c.match(url))continue;try{const r=await fetch(url,{credentials:'same-origin'});if(!r.ok)throw Error(String(r.status));await c.put(url,r.clone());ok++;}catch(_){failed++;}}e.source?.postMessage({type:'offline-media-result',downloaded:ok,failed});})());}});
+self.addEventListener('message',e=>{const msg=e.data||{};if(msg.type==='activate-now'){e.waitUntil(self.skipWaiting());return;}if(msg.type==='offline-check'){e.waitUntil((async()=>{const missing=[];for(const path of INSTALL_ASSETS){if(!await cached(path))missing.push(path);}e.source?.postMessage({type:'offline-check-result',version:VERSION,ready:missing.length===0,missing});})());}if(msg.type==='offline-warmup'){e.waitUntil((async()=>{const missing=await fill(INSTALL_ASSETS);e.source?.postMessage({type:'offline-warmup-result',version:VERSION,ready:missing.length===0,missing});})());}if(msg.type==='offline-media-prefetch'){e.waitUntil((async()=>{const c=await caches.open(MEDIA_CACHE);let ok=0,failed=0;for(const uri of [...new Set(Array.isArray(msg.uris)?msg.uris:[])].slice(0,2000)){if(typeof uri!=='string'||!/^(app-pdf|app-image|web-pdf|web-image):/.test(uri))continue;const url='/api/media?uri='+encodeURIComponent(uri);if(await c.match(url))continue;try{const r=await fetch(url,{credentials:'same-origin'});if(!r.ok)throw Error(String(r.status));await c.put(url,r.clone());ok++;}catch(_){failed++;}}e.source?.postMessage({type:'offline-media-result',downloaded:ok,failed});})());}});
