@@ -57,15 +57,22 @@
   if(!pending.length)return;
   const c=await caches.open('anlagenbuch-media-2.85');
   for(const uri of pending){
-   const hit=await c.match(mediaUrl(uri));
-   if(!hit)throw Error('Offline-Datei fehlt lokal: '+uri);
+   const url=mediaUrl(uri);
+   let hit=await c.match(url);
+   // Reuse previous version caches before reporting a missing offline upload.
+   if(!hit){for(const name of (await caches.keys()).filter(n=>n.startsWith('anlagenbuch-media-')&&n!=='anlagenbuch-media-2.85')){try{hit=await(await caches.open(name)).match(url);if(hit){await c.put(url,hit.clone());break;}}catch(_){}}}
+   if(!hit){
+    // Do not delete or silently replace an upload whose bytes have vanished.
+    // Remaining offline edits can still be retained and exported by the user.
+    throw Error('Lokale PDF/Bild-Datei nicht mehr vorhanden: '+uri+'. Bitte Originaldatei erneut in der betreffenden Anlage auswählen. Die übrigen Daten bleiben gespeichert.');
+   }
    const file=await hit.blob(),kind=uri.startsWith('web-pdf:')?'pdf':'image';
    const uploaded=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(uri.split('/').pop()+ (kind==='pdf'?'.pdf':'.jpg'))},body:file});
    const oldValue=uri,newValue=uploaded.uri;
    function replace(v){if(v===oldValue)return newValue;if(Array.isArray(v))return v.map(replace);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=replace(x);return o;}return v;}
    // Replacing a temporary URI is part of the pending local edit, not a server merge.
-   persist({...d,local:replace(d.local),pending:null});
    await c.put(mediaUrl(newValue),hit.clone());
+   persist({...d,local:replace(d.local),pending:null});
   }
   apply();
  }

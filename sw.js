@@ -1,5 +1,5 @@
  'use strict';
-const VERSION='3.25';
+const VERSION='3.26';
 const CACHE='anlagenbuch-shell-'+VERSION;
 const MEDIA_CACHE='anlagenbuch-media-2.85';
 const CORE=["/index.html","/app.html","/login.html","/offline-store-235.js","/web-bootstrap-onedrive.js","/sw.js"];
