@@ -69,12 +69,13 @@
     // Remaining offline edits can still be retained and exported by the user.
     throw Error('Lokale PDF/Bild-Datei nicht mehr vorhanden: '+uri+'. Bitte Originaldatei erneut in der betreffenden Anlage auswählen. Die übrigen Daten bleiben gespeichert.');
    }
+   const cacheCopy=hit.clone();
    const file=await hit.blob(),kind=uri.startsWith('web-pdf:')?'pdf':'image';
    const uploaded=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(uri.split('/').pop()+ (kind==='pdf'?'.pdf':'.jpg'))},body:file});
    const oldValue=uri,newValue=uploaded.uri;
    function replace(v){if(v===oldValue)return newValue;if(Array.isArray(v))return v.map(replace);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=replace(x);return o;}return v;}
    // Replacing a temporary URI is part of the pending local edit, not a server merge.
-   await c.put(mediaUrl(newValue),hit.clone());
+   await c.put(mediaUrl(newValue),cacheCopy);
    persist({...d,local:replace(d.local),pending:null});
   }
   apply();

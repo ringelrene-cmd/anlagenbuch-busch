@@ -78,7 +78,7 @@ export class Coordinator {
    await this.store.write('state.json',{...doc,...receipt});return response({ok:true,...receipt});
   }
   if(path==='/api/backup'&&req.method==='POST'){
-   const supplied=await req.clone().json();
+   const supplied=await req.json();
    if(supplied.backup){
     const b=supplied.backup;if(b.format!=='anlagenbuch-backup-v1'||!Number.isFinite(b.at))throw Error('Ungültiges Backup.');AppCore.validate(b.state);
     const refs=new Set();const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))refs.add(x);else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(b.state);
@@ -86,7 +86,7 @@ export class Coordinator {
     const previous=await this.store.read('backup-latest.json');if(previous&&previous.at>b.at)return response({ok:true,superseded:true});
     await this.store.write('backup-latest.json',b);return response({ok:true});
    }
-   const body=await req.json();if(!doc.state||body.revision!==doc.revision)return response({error:'Datenstand hat sich geändert. Bitte erneut sichern.'},409);
+   const body=supplied;if(!doc.state||body.revision!==doc.revision)return response({error:'Datenstand hat sich geändert. Bitte erneut sichern.'},409);
    const media={};const scan=x=>{if(typeof x==='string'&&/^(app-pdf|app-image|web-pdf|web-image):/.test(x))media[x]=null;else if(x&&typeof x==='object')Object.values(x).forEach(scan);};scan(doc.state);
    let total=0;for(const uri of Object.keys(media)){const name=mediaName(uri),b=await this.store.get(name);if(!b)throw Error('Backup abgebrochen: Datei fehlt '+name);total+=b.length;if(total>60*1024*1024)throw Error('Backup größer als 60 MB. Administrator muss das Speicherlimit erweitern.');let str='';for(let i=0;i<b.length;i+=8192)str+=String.fromCharCode(...b.slice(i,i+8192));media[uri]=btoa(str);}
    const backup={format:'anlagenbuch-backup-v1',at:Date.now(),revision:doc.revision,state:doc.state,media};await this.store.write('backup-latest.json',backup);return response({ok:true,backup});
