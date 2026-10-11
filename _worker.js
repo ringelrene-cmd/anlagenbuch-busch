@@ -1,4 +1,4 @@
-// Anlagenbuch 3.15.3 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.15.4 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -156,7 +156,7 @@ class OneDrive {
   if(!r.ok)throw Object.assign(Error('OneDrive-Serveranmeldung fehlgeschlagen ('+r.status+').'),{status:503});
   const j=await r.json();if(j.refresh_token)await this.storage?.put(tokenKey,j.refresh_token);this.cached={value:j.access_token,until:Date.now()+j.expires_in*1000};return j.access_token;
  }
- path(name){if(!/^[A-Za-z0-9._-]+$/.test(name)||name==='.'||name==='..')throw Error('Ungültiger Dateiname.');return '/drives/'+encodeURIComponent(this.env.ONEDRIVE_DRIVE_ID)+'/items/'+encodeURIComponent(this.env.ONEDRIVE_FOLDER_ID)+':/'+name;}
+ path(name){if(!((name.startsWith('PDFs/')&&name.length>5&&!name.includes('..')&&!name.includes('\\')&&!name.includes('?')&&!name.includes('#'))||/^[A-Za-z0-9._-]+$/.test(name))||name==='.'||name==='..')throw Error('Ungültiger Dateiname.');return '/drives/'+encodeURIComponent(this.env.ONEDRIVE_DRIVE_ID)+'/items/'+encodeURIComponent(this.env.ONEDRIVE_FOLDER_ID)+':/'+name.split('/').map(encodeURIComponent).join('/');}
  async request(path,opt={}){
   const r=await fetch(GRAPH+path,{...opt,headers:{Authorization:'Bearer '+await this.token(),...opt.headers},signal:AbortSignal.timeout(20000)});
   if(!r.ok){const e=Object.assign(Error('OneDrive-Anfrage fehlgeschlagen ('+r.status+').'),{status:r.status===404?404:503,retryAfter:r.headers.get('Retry-After')||'30'});if(r.status===429)e.status=429;throw e;}return r;
@@ -190,6 +190,14 @@ class Coordinator {
    const bytes=new Uint8Array(await req.arrayBuffer());if(!bytes.length||bytes.length>50*1024*1024)throw Error('Datei leer oder größer als 50 MB.');
    const name=decodeURIComponent(req.headers.get('X-File-Name')||'Datei');const ext=kind==='pdf'?'pdf':(name.match(/\.(png|jpe?g|webp)$/i)?.[1]||'jpg').toLowerCase();
    if(kind==='pdf'&&!new TextDecoder().decode(bytes.slice(0,1024)).includes('%PDF-'))throw Error('Ungültige PDF-Datei.');
+   if(kind==='pdf'){
+    const filename=name.split(/[\\/]/).pop().normalize('NFC');
+    if(!filename||!filename.toLowerCase().endsWith('.pdf')||filename.length>180||/[<>:\"|?*\x00-\x1f]/.test(filename))throw Error('Ungültiger PDF-Dateiname.');
+    const key='PDFs/'+filename,prior=await this.store.get(key);
+    if(prior&&(prior.length!==bytes.length||prior.some((v,i)=>v!==bytes[i])))return response({error:'Eine andere PDF mit diesem Dateinamen ist bereits vorhanden. Bitte eindeutig benennen.'},409);
+    if(!prior)await this.store.put(key,bytes);
+    return response({ok:true,uri:'web-pdf://folder/'+encodeURIComponent(filename),name:filename,reused:!!prior});
+   }
    const file=crypto.randomUUID()+'.'+ext;await this.store.put('media-'+file,bytes);return response({ok:true,uri:'web-'+kind+'://temp/'+file,name});
   }
   if(path==='/api/media'&&req.method==='GET'){
@@ -267,6 +275,7 @@ class Coordinator {
 }
 function mediaName(uri){
  const u=new URL(uri),bits=u.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+ if(u.protocol==='web-pdf:'&&u.hostname==='folder'&&bits.length===1&&bits[0].toLowerCase().endsWith('.pdf')&&!bits[0].includes('/')&&!bits[0].includes('..'))return 'PDFs/'+bits[0];
  if(['web-pdf:','web-image:'].includes(u.protocol)&&u.hostname==='temp'&&bits.length===1&&/^[A-Za-z0-9._-]+$/.test(bits[0]))return 'media-'+bits[0];
  if(['app-pdf:','app-image:'].includes(u.protocol)&&u.hostname==='backup'&&bits.length===2&&bits.every(x=>/^[A-Za-z0-9._-]+$/.test(x)))return 'legacy-'+bits.join('--');
  throw Error('Dateiverweis muss vor der Umstellung migriert werden: '+uri);
@@ -312,7 +321,7 @@ async function login(req,env){const pw=String(env.WEB_PASSWORD||'');if(!pw)retur
 async function gateway(req,env){
  const u=new URL(req.url),p=u.pathname;
  if(!['GET','HEAD'].includes(req.method)){const origin=req.headers.get('Origin');if(origin&&origin!==u.origin)return json({error:'Fremder Ursprung.'},403);}
- if(p==='/api/version')return json({ok:true,version:'3.15.3',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.15.4',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  if(p==='/api/companion/device-token'&&req.method==='GET'){
   if(!await authorized(req,env))return json({error:'Bitte einmal in der Web-App anmelden.'},401);
@@ -331,7 +340,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.3', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.15.4', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);
