@@ -54,8 +54,24 @@
   persist({...d,local:m.state,base:remote,revision,pending:null,conflicts:[]});apply();
  }
  // Offline uploads retain their bytes locally until the cloud has accepted them.
+ // Cloud PDF mappings take precedence over a device-specific temporary reference.
+ // Do not alter unrelated records, faults or unit fields.
+ function preferCloudPdfConflicts(){
+  const rows=(d.conflicts||[]),pdfRows=rows.filter(c=>c.path?.at(-1)==='pdfUri'&&typeof c.remote==='string'&&/^(web-pdf|app-pdf):/.test(c.remote));
+  if(!pdfRows.length)return;
+  let local=M.copy(d.local);
+  for(const c of pdfRows){try{local=M.resolve(local,c.path,c.remote,false);}catch(_){}}
+  persist({...d,local,conflicts:rows.filter(c=>!pdfRows.includes(c)),pending:null});apply();
+ }
+ function replaceCloudReference(oldUri,cloudUri){
+  if(!cloudUri||cloudUri===oldUri)return false;
+  function walk(v){if(v===oldUri)return cloudUri;if(Array.isArray(v))return v.map(walk);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=walk(x);return o;}return v;}
+  const next=walk(d.local);if(M.same(next,d.local))return false;
+  persist({...d,local:next,pending:null});apply();return true;
+ }
  async function finishOfflineUploads(){
   if(!d.local||navigator.onLine===false)return;
+  preferCloudPdfConflicts();
   const pending=refs(d.local).filter(x=>/^(web-pdf|web-image):\/\/temp\//.test(x));
   if(!pending.length)return;
   const c=await caches.open('anlagenbuch-media-2.85');
@@ -65,9 +81,12 @@
    // Reuse previous version caches before reporting a missing offline upload.
    if(!hit){for(const name of (await caches.keys()).filter(n=>n.startsWith('anlagenbuch-media-')&&n!=='anlagenbuch-media-2.85')){try{hit=await(await caches.open(name)).match(url);if(hit){await c.put(url,hit.clone());break;}}catch(_){}}}
    if(!hit){
-    // Do not delete or silently replace an upload whose bytes have vanished.
-    // Remaining offline edits can still be retained and exported by the user.
-    throw Error('Lokale PDF/Bild-Datei nicht mehr vorhanden: '+uri+'. Bitte Originaldatei erneut in der betreffenden Anlage auswählen. Die übrigen Daten bleiben gespeichert.');
+    // If this device has lost its temporary bytes, restore the authoritative
+    // OneDrive reference for the same conflicted PDF, instead of blocking all sync.
+    const match=(d.conflicts||[]).find(c=>c.local===uri&&c.path?.at(-1)==='pdfUri'&&typeof c.remote==='string');
+    if(match&&replaceCloudReference(uri,match.remote))continue;
+    // Never publish a dangling local URI as if the file had uploaded.
+    throw Error('PDF lokal nicht vorhanden und keine eindeutige OneDrive-Zuordnung gefunden: '+uri+'. Andere Daten wurden nicht gelöscht.');
    }
    const cacheCopy=hit.clone();
    const file=await hit.blob(),kind=uri.startsWith('web-pdf:')?'pdf':'image';

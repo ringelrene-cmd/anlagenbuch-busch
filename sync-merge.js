@@ -15,6 +15,7 @@ function merge(base,local,remote){
   if(same(l,b))return copy(r);
   if(same(r,b)||same(l,r))return copy(l);
   if(path.length===1&&['globalSyncMeta','faultSyncMeta','workSyncMeta','handlingSyncMeta'].includes(path[0]))return copy(r);
+  if(path.at(-1)==='pdfUri'&&typeof r==='string'&&/^(web-pdf|app-pdf):/.test(r))return copy(r);
   if(path.at(-1)==='updatedAt'&&typeof l===typeof r&&['string','number'].includes(typeof l))return l>r?l:r;
   if(object(l)&&object(r)&&(object(b)||b===undefined)){
    const out={};for(const k of new Set([...Object.keys(b||{}),...Object.keys(l),...Object.keys(r)])){
