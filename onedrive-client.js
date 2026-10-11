@@ -50,11 +50,31 @@
   if(m.conflicts.length){persist({...d,local:m.state,base:M.copy(remote),revision,pending:null,conflicts:m.conflicts,conflictRemote:remote,conflictRevision:revision});apply();return;}
   persist({...d,local:m.state,base:remote,revision,pending:null,conflicts:[]});apply();
  }
+ // Offline uploads retain their bytes locally until the cloud has accepted them.
+ async function finishOfflineUploads(){
+  if(!d.local||navigator.onLine===false)return;
+  const pending=refs(d.local).filter(x=>/^(web-pdf|web-image):\/\/temp\//.test(x));
+  if(!pending.length)return;
+  const c=await caches.open('anlagenbuch-media-2.85');
+  for(const uri of pending){
+   const hit=await c.match(mediaUrl(uri));
+   if(!hit)throw Error('Offline-Datei fehlt lokal: '+uri);
+   const file=await hit.blob(),kind=uri.startsWith('web-pdf:')?'pdf':'image';
+   const uploaded=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(uri.split('/').pop()+ (kind==='pdf'?'.pdf':'.jpg'))},body:file});
+   const oldValue=uri,newValue=uploaded.uri;
+   function replace(v){if(v===oldValue)return newValue;if(Array.isArray(v))return v.map(replace);if(v&&typeof v==='object'){const o={};for(const [k,x] of Object.entries(v))o[k]=replace(x);return o;}return v;}
+   // Replacing a temporary URI is part of the pending local edit, not a server merge.
+   persist({...d,local:replace(d.local),pending:null});
+   await c.put(mediaUrl(newValue),hit.clone());
+  }
+  apply();
+ }
  async function sync(){
   if(navigator.onLine===false||Date.now()<waitUntil)return;
   if(busy){syncAgain=true;return;}
   busy=true;syncAgain=false;error='';emit();
   try{
+   await finishOfflineUploads();
    // 2.91: Offene Konflikte dürfen andere, unabhängige Änderungen nicht blockieren.
    // Der Server übernimmt bei /api/sync alle konfliktfreien Teile einer Transaktion
    // und lässt nur die tatsächlich widersprüchlichen Felder zur Auswahl offen.
@@ -140,7 +160,16 @@
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
- async function upload(file,kind){const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});const c=await caches.open('anlagenbuch-media-2.85');await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
+ async function upload(file,kind){
+  const c=await caches.open('anlagenbuch-media-2.85');
+  if(navigator.onLine===false){
+   const uri=(kind==='pdf'?'web-pdf://temp/':'web-image://temp/')+crypto.randomUUID();
+   await c.put(mediaUrl(uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));
+   return {uri,name:file.name};
+  }
+  try{const r=await api('/api/media/upload?kind='+kind,{method:'POST',headers:{'X-File-Name':encodeURIComponent(file.name)},body:file});await c.put(mediaUrl(r.uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return r;}
+  catch(e){if(navigator.onLine!==false)throw e;const uri=(kind==='pdf'?'web-pdf://temp/':'web-image://temp/')+crypto.randomUUID();await c.put(mediaUrl(uri),new Response(file,{headers:{'Content-Type':file.type||'application/octet-stream'}}));return {uri,name:file.name};}
+ }
  window.Native={load:()=>d.local?JSON.stringify(d.local):'',seed:()=>window.SEED_TEXT||'',save,
   makeBackup:raw=>save(raw),backupStatus:()=>JSON.stringify(OneDriveSync.status()),retryCloud:()=>{sync();uploadBackup();return true;},
   queueFaultSync:()=>true,queueFaultSyncBatch:()=>true,queueWorkSync:()=>true,queueWorkSyncBatch:()=>true,syncFaults:()=>{sync();return true;},syncWork:()=>{sync();return true;},resetFaultSyncForRestore:()=>true,resetWorkSyncForRestore:()=>true,
