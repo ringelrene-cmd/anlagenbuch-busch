@@ -8,7 +8,7 @@ export class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
  async mediaPresent(s){
-  // 3.16.1: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
+  // 3.16.3: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
   // nicht mehr blockieren. URI-Form weiterhin validieren; fehlende Dateien
   // werden erst beim Oeffnen als 404 gemeldet, Verknuepfungen bleiben erhalten.
   const refs=new Set();
