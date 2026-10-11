@@ -160,20 +160,12 @@
  // 2.96: visible clients actively verify the central OneDrive revision. This is intentionally
  // independent of the normal merge timer so an already-open PC cannot remain on a stale UI.
  async function livePull(){
+  // 3.15.7: The regular sync() is the sole writer/merger. A separate live pull
+  // could previously clear d.pending and overwrite an in-flight local edit.
+  // Keep all offline edits until the server acknowledges their transaction.
   if(document.hidden||navigator.onLine===false)return;
-  try{
-   const j=await api('/api/bootstrap');
-   const remoteRev=Number(j.revision||0);
-   if(j.state&&remoteRev>Number(d.revision||0)){
-    const remote=JSON.parse(j.state);
-    const m=M.merge(d.base,d.local,remote);
-    persist({...d,local:m.state,base:M.copy(remote),pending:null,conflicts:m.conflicts,conflictRemote:m.conflicts.length?remote:null,conflictRevision:m.conflicts.length?remoteRev:0,revision:remoteRev});
-    apply();
-   }else if(j.state&&remoteRev===Number(d.revision||0)){
-    // Re-apply current working copy as a UI heartbeat; fixes stale open dashboards.
-    apply();
-   }
-  }catch(_){}
+  await sync();
  }
- setInterval(()=>{if(document.hidden)return;livePull();sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{livePull();sync();});window.addEventListener('pageshow',()=>{livePull();sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden){livePull();sync();}});setTimeout(()=>{livePull();sync();},300);
+
+ setInterval(()=>{if(document.hidden)return;sync();revisionWatch();},5000);setInterval(()=>{if(document.hidden)sync();},60000);setInterval(uploadBackup,120000);window.addEventListener('online',()=>{sync();uploadBackup();});window.addEventListener('offline',emit);window.addEventListener('focus',()=>{sync();});window.addEventListener('pageshow',()=>{sync();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});setTimeout(()=>{sync();},300);
 })();
