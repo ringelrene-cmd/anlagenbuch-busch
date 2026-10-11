@@ -125,7 +125,7 @@
     const j=await api('/api/bootstrap');
     if(j.state&&j.revision>=d.revision){const remote=JSON.parse(j.state);accept(remote,j.revision,d.base);}
    }
-  }catch(e){error=e.message;if(e.status===409&&e.data.conflicts&&e.data.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
+  }catch(e){error=e.message;if(e.status===409&&e.data?.conflicts&&e.data?.state){const remote=typeof e.data.state==='string'?JSON.parse(e.data.state):e.data.state;const m=M.merge(d.base,d.local,remote);persist({...d,local:m.state,base:M.copy(remote),revision:e.data.revision,pending:null,conflicts:m.conflicts.length?m.conflicts:e.data.conflicts,conflictRemote:remote,conflictRevision:e.data.revision});apply();}}
   finally{
    busy=false;emit();
    if(syncAgain&&navigator.onLine!==false)setTimeout(sync,0);
@@ -163,7 +163,7 @@
   rows.forEach((c,i)=>{if(choices[i]==='local')next=M.resolve(next,c.path,c.local,c.localMissing);});
   persist({...d,base:M.copy(d.conflictRemote),revision:d.conflictRevision,local:next,conflicts:[],conflictRemote:null,conflictRevision:0,pending:null});apply();sync();
  }
- window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,backups:[]})};
+ window.OneDriveSync={sync,makeBackup,restoreBackup,resolveConflicts,getConflicts:()=>M.copy(d.conflicts||[]),status:()=>({provider:'onedrive',configured:true,signedIn:true,online:navigator.onLine!==false,pending:dirty()||!!d.pending,busy,error,conflicts:d.conflicts.length,revision:d.revision,retrySeconds:Math.max(0,Math.ceil((waitUntil-Date.now())/1000)),backups:[]})};
  window.CompanionNative=window.Native||null;
  function pick(accept,callback){const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{if(i.files[0])callback(i.files[0]).catch(e=>window.nativeMessage?.(e.message));};i.click();}
  function download(name,data,type){const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
