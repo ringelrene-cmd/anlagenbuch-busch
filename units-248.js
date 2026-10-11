@@ -177,7 +177,8 @@ function addToToday(assetId,unitId){
  if(!u){toast('Tagesgeschäft konnte nicht angelegt werden: Unit nicht gefunden.');return;}
  const rows=todayRows();
  if(rows.some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done)){
-  toast('Pumpe ist für heute bereits vorgemerkt.');return;
+  if(document.getElementById('modal')?.open)document.getElementById('modal').close();
+  toast('Pumpe ist bereits im Tagesgeschäft.');return;
  }
  const old=rows.find(r=>r.assetId===assetId&&r.unitId===unitId);
  if(old)old.done=false;
@@ -185,7 +186,9 @@ function addToToday(assetId,unitId){
  if(!saveToday(rows)){toast('Tagesgeschäft konnte nicht gespeichert werden.');return;}
  const check=(state.dailyBusiness||[]).some(r=>r.assetId===assetId&&r.unitId===unitId&&!r.done);
  if(!check){toast('Fehler: Tagesgeschäft wurde nicht übernommen.');return;}
- toast('Pumpe für Arbeiten Heute – Tagesgeschäft gespeichert.');
+ if(document.getElementById('modal')?.open)document.getElementById('modal').close();
+ toast('Pumpe für Arbeiten Heute – Tagesgeschäft lokal gespeichert. OneDrive-Abgleich läuft.');
+ if(window.OneDriveSync?.sync)window.OneDriveSync.sync();
 }
 
 window.openTodayList=function(){const rows=todayRows().filter(r=>!r.done),valid=rows.map(r=>{const a=state.assets.find(x=>x.id===r.assetId),u=a&&(a.units||[]).find(x=>x.id===r.unitId);return a&&u?{...r,a,u}:null;}).filter(Boolean);modal(`<h2>Arbeiten Heute – Tagesgeschäft</h2><p class="hint">Alle offenen Arbeiten, auch aus vergangenen Tagen. Sie bleiben bis zum Erledigen oder Entfernen sichtbar.</p>${valid.length?valid.map(r=>`<article class="record"><div class="row"><strong>${esc(pumpDesignation(r.a,r.u))}</strong></div><p class="hint">${r.date<todayDate()?'Offen seit '+esc(r.date)+' · ':''}${esc(r.a.module)} · Tool ID ${esc(r.a.name)} · Y ${esc(r.a.y)} / X ${esc(r.a.x)}</p><div class="actions"><button data-today-open="${esc(r.assetId)}|${esc(r.unitId)}">Pumpe öffnen</button><button data-today-done="${esc(r.assetId)}|${esc(r.unitId)}" class="light">Als erledigt markieren</button><button data-today-remove="${esc(r.assetId)}|${esc(r.unitId)}" class="danger">Entfernen</button></div></article>`).join(''):'<div class="empty">Für heute sind noch keine Pumpen hinterlegt.</div>'}<div class="actions"><button id="cancel" class="light">Schließen</button></div>`);};

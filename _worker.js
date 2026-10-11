@@ -1,4 +1,4 @@
-// Anlagenbuch 3.16.3 – Cloudflare Pages advanced-mode Worker
+// Anlagenbuch 3.16.4 – Cloudflare Pages advanced-mode Worker
 // core.js
 (function(root){
 'use strict';
@@ -179,7 +179,7 @@ class Coordinator {
  constructor(store){this.store=store;this.knownMedia=new Set();}
  async read(){return await this.store.read('state.json')||empty();}
  async mediaPresent(s){
-  // 3.16.3: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
+  // 3.16.4: Alte PDF-/Bildverweise duerfen Aenderungen an anderen Daten
   // nicht mehr blockieren. URI-Form weiterhin validieren; fehlende Dateien
   // werden erst beim Oeffnen als 404 gemeldet, Verknuepfungen bleiben erhalten.
   const refs=new Set();
@@ -359,7 +359,7 @@ async function gateway(req,env){
    return json({ok:false,available:null,folderUrl:shared,error:'Automatische OneDrive-Prüfung derzeit nicht möglich: '+String(e?.message||e)},503);
   }
  }
- if(p==='/api/version')return json({ok:true,version:'3.16.3',provider:'onedrive'});
+ if(p==='/api/version')return json({ok:true,version:'3.16.4',provider:'onedrive'});
  // Pairing is only authorized through the existing authenticated web session.
  // Register the desktop companion once. Only a short-lived device token is stored on Windows.
  if(p==='/api/companion/register'&&req.method==='POST'){
@@ -385,7 +385,7 @@ async function gateway(req,env){
  if(p==='/api/login'&&req.method==='POST')return login(req,env);
  if(p==='/companion-auth'){
   if(!await verifyCompanionHandoff(u.searchParams.get('token'),env))return json({error:'Ungültiger Begleiter-Zugang.'},401);
-  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.16.3', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'/app.html?v=3.16.4', 'Set-Cookie':await persistentSessionCookie(env),'Cache-Control':'no-store'}});
  }
  if(p==='/api/companion/handoff'&&req.method==='GET'){
   if(!await companionAuthorized(req,env))return json({error:'Anmeldung erforderlich.'},401);
